@@ -1,32 +1,29 @@
-﻿using ScreenSound.Models;
+﻿using ScreenSound.Banco;
+using ScreenSound.Models;
 
 namespace ScreenSound.Menus;
 
 class MenuExibirDetalhes : Menu
 {
-    public override void Executar(Dictionary<string, Banda> bandasRegistradas)
+    public override void Executar(ArtistaDAL artistaDAL)
     {
 
-        base.Executar(bandasRegistradas);
+        base.Executar(artistaDAL);
         ExibirTituloDaOpcao("Exibir detalhes da banda");
         Console.Write("Digite o nome da banda que deseja conhecer melhor: ");
-        string nomeDaBanda = Console.ReadLine()!;
-        if (bandasRegistradas.ContainsKey(nomeDaBanda))
+        string nomeDoArtista = Console.ReadLine()!;
+        var artistaRecuperado = artistaDAL.RecuperarPeloNome(nomeDoArtista);
+        if (artistaRecuperado is not null)
         {
-            Banda banda = bandasRegistradas[nomeDaBanda];
-            Console.WriteLine($"\nA média da banda {nomeDaBanda} é {banda.Media}.");
             Console.WriteLine($"\nDiscografia: ");
-            foreach (Album album in banda.Albuns)
-            {
-                Console.WriteLine($"{album.Nome} -> {album.Media}");
-            }
+            artistaRecuperado.ExibirDiscografia();
             Console.WriteLine("\nDigite uma tecla para votar ao menu principal");
             Console.ReadKey();
             Console.Clear();
         }
         else
         {
-            Console.WriteLine($"\nA banda {nomeDaBanda} não foi encontrada!");
+            Console.WriteLine($"\nA banda {nomeDoArtista} não foi encontrada!");
             Console.WriteLine("Digite uma tecla para voltar ao menu principal");
             Console.ReadKey();
             Console.Clear();

@@ -1,16 +1,17 @@
-﻿using ScreenSound.Models;
+﻿using ScreenSound.Banco;
+using ScreenSound.Models;
 
 namespace ScreenSound.Menus;
 
-class MenuMostrarBandas : Menu
+class MenuMostrarArtistas : Menu
 {
-    public override void Executar(Dictionary<string, Banda> bandasRegistradas)
+    public override void Executar(ArtistaDAL artistaDAL)
     {
 
-        base.Executar(bandasRegistradas);
+        base.Executar(artistaDAL);
         ExibirTituloDaOpcao("Exibindo todas as bandas registradas na nossa aplicação");
 
-        foreach (string banda in bandasRegistradas.Keys)
+        foreach (var banda in artistaDAL.Listar())
         {
             Console.WriteLine($"Banda: {banda}");
         }
