@@ -6,7 +6,7 @@ using ScreenSound.Models;
 //Ira.AdicionarNota(new Avaliacao(8));
 //Ira.AdicionarNota(new Avaliacao(6));
 var context = new ScreenSoundContext();
-var artistaDAL = new ArtistaDAL(context);
+var artistaDAL = new DAL<Artista>(context);
 
 Dictionary<int, Menu> opcoes = new();
 opcoes.Add(1, new MenuRegistrarArtista());

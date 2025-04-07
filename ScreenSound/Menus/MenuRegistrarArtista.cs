@@ -5,7 +5,7 @@ namespace ScreenSound.Menus;
 
 class MenuRegistrarArtista : Menu
 {
-    public override void Executar(ArtistaDAL artistaDAL)
+    public override void Executar(DAL<Artista> artistaDAL)
     {
         base.Executar(artistaDAL);
         ExibirTituloDaOpcao("Registro das bandas");
