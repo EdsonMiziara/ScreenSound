@@ -19,7 +19,7 @@ internal class MenuRegistrarMusica : Menu
         var artistaRecuperado = artistaDAL.RecuperarPor(a => a.Nome.Equals(nomeDoArtista));
         if (artistaRecuperado is not null)
         {
-            Console.Write("Agora digite o título da música: ");
+            Console.Write("Agora digite o título da música:  ");
             string tituloDaMusica = Console.ReadLine()!;
             artistaRecuperado.AdicionarMusica(new Musica(tituloDaMusica));
             Console.WriteLine($"A música {tituloDaMusica} de {nomeDoArtista} foi registrada com sucesso!");
