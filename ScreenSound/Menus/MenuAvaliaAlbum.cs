@@ -24,6 +24,7 @@ class MenuAvaliaAlbum : Menu
                 Avaliacao nota = Avaliacao.Parse(Console.ReadLine()!);
                 album.AdicionarNota(nota);
                 Console.WriteLine($"\nA nota {nota.Nota} foi registrada com sucesso para o album {nomeDoAlbum}");
+                artistaDAL.Atualizar(artistaRecuperado);
                 Thread.Sleep(2000);
                 Console.Clear();
             }
