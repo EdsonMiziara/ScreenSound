@@ -8,7 +8,7 @@ using System.Xml;
 namespace ScreenSound.Models;
 
 
-internal class Avaliacao
+public class Avaliacao
 {
     public Avaliacao(int nota)
     {
@@ -21,7 +21,8 @@ internal class Avaliacao
             Console.WriteLine("Nota invalida");
         }
     }
-    public int Nota { get; }
+    public int Nota { get; set; }
+    public int Id { get; set; }
 
     public static Avaliacao Parse(string texto)
     {

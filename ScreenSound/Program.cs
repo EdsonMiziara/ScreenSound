@@ -2,9 +2,6 @@
 using ScreenSound.Menus;
 using ScreenSound.Models;
 
-//Ira.AdicionarNota(new Avaliacao(10));
-//Ira.AdicionarNota(new Avaliacao(8));
-//Ira.AdicionarNota(new Avaliacao(6));
 var context = new ScreenSoundContext();
 var artistaDAL = new DAL<Artista>(context);
 
@@ -13,11 +10,10 @@ opcoes.Add(1, new MenuRegistrarArtista());
 opcoes.Add(2, new MenuRegistrarMusica());
 opcoes.Add(3, new MenuExibirDetalhes());
 opcoes.Add(4, new MenuMostrarArtistas());
+opcoes.Add(5, new MenuRegistrarAlbum());
+opcoes.Add(6, new MenuAvaliaAlbum());
+opcoes.Add(7, new MenuExibirDetalhes());
 opcoes.Add(-1, new MenuSair());
-//opcoes.Add(2, new MenuRegistrarAlbum());
-//opcoes.Add(4, new MenuAvaliarBanda());
-//opcoes.Add(5, new MenuAvaliaAlbum());
-//opcoes.Add(6, new MenuExibirDetalhes());
 
 void ExibirLogo()
 {
@@ -40,10 +36,10 @@ void ExibirOpcoesDoMenu()
     Console.WriteLine("Digite 2 para Registrar uma musica");
     Console.WriteLine("Digite 3 para exibir os detalhes de um Artista");
     Console.WriteLine("Digite 4 para mostrar todas os Artistas");
+    Console.WriteLine("Digite 5 para registrar o álbum de uma banda");
+    Console.WriteLine("Digite 6 para avaliar uma banda");
+    Console.WriteLine("Digite 7 para avaliar um album");
     Console.WriteLine("Digite -1 para sair");
-    //Console.WriteLine("Digite 2 para registrar o álbum de uma banda");
-    //Console.WriteLine("Digite 4 para avaliar uma banda");
-    //Console.WriteLine("Digite 5 para avaliar um album");
 
     Console.Write("\nDigite a sua opção: ");
     string opcaoEscolhida = Console.ReadLine()!;

@@ -1,6 +1,6 @@
 ﻿namespace ScreenSound.Models;
 
-internal class Musica /*: IAvaliavel */
+public class Musica : IAvaliavel
 {
     public Musica(string nome)
     {
@@ -8,13 +8,12 @@ internal class Musica /*: IAvaliavel */
     }
 
     public string Nome { get; set; }
+    public virtual ICollection<Avaliacao> Notas { get; set; } = new List<Avaliacao>();
     public int Id { get; set; }
-
-    public void ExibirFichaTecnica()
-    {
-        Console.WriteLine($"Nome: {Nome}");
-
-    }
+    public int? AnoLancamento { get; set; }
+    public virtual Artista? Artista { get; set; }
+    public virtual Album? Album { get; set; }
+    public int Duracao { get; set; }
 
     public override string ToString()
     {
@@ -23,35 +22,39 @@ internal class Musica /*: IAvaliavel */
     }
 
 
-    //public Musica(Artista artista, string nome)
-    //{
-    //    Artista = artista;
-    //    Nome = nome;
-    //}
+    public Musica(Artista artista, string nome)
+    {
+        Artista = artista;
+        Nome = nome;
+    }
 
-    //public Artista Artista { get; }
-    //public int Duracao { get; set; }
-    //public bool Disponivel { get; set; }
-    //public string DescricaoResumida => $"A música {Nome} pertence à banda {Artista}";
+    public bool Disponivel { get; set; }
 
-    //public double Media => throw new NotImplementedException();
+    public double Media
+    {
+        get
+        {
+            if (Notas.Count == 0) return 0;
+            else return Notas.Average(a => a.Nota);
+        }
+    }
+    public void ExibirFichaTecnica()
+    {
+        Console.WriteLine($"Nome: {Nome}");
+        Console.WriteLine($"Artista: {Artista.Nome}");
+        Console.WriteLine($"Duração: {Duracao}");
+        if (Disponivel)
+        {
+            Console.WriteLine("Disponível no plano.");
+        }
+        else
+        {
+            Console.WriteLine("Adquira o plano Plus+");
+        }
+    }
 
-    //public void AdicionarNota(Avaliacao nota)
-    //{
-    //    throw new NotImplementedException();
-    //}
-
-    //public void ExibirFichaTecnica()
-    //{
-    //    Console.WriteLine($"Nome: {Nome}");
-    //    Console.WriteLine($"Artista: {Artista.Nome}");
-    //    Console.WriteLine($"Duração: {Duracao}");
-    //    if (Disponivel)
-    //    {
-    //        Console.WriteLine("Disponível no plano.");
-    //    } else
-    //    {
-    //        Console.WriteLine("Adquira o plano Plus+");
-    //    }
-    //}
+    public void AdicionarNota(Avaliacao nota)
+    {
+        Notas.Add(nota);
+    }
 }
