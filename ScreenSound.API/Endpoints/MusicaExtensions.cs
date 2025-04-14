@@ -54,8 +54,8 @@ public static class MusicaExtensions
             {
                 return Results.NotFound();
             }
-            musicaAAtualizar.Nome = musicaRequestEdit.nome;
-            musicaAAtualizar.AnoLancamento = musicaRequestEdit.anoLancamento;
+            musicaAAtualizar.Nome = musicaRequestEdit.Nome;
+            musicaAAtualizar.AnoLancamento = musicaRequestEdit.AnoLancamentoEdit;
 
             dal.Atualizar(musicaAAtualizar);
             return Results.Ok();

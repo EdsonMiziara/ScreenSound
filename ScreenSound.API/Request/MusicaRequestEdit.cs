@@ -1,5 +1,6 @@
-﻿using ScreenSound.API.Requests;
+﻿using ScreenSound.Modelos;
 
-namespace ScreenSound.API.Request;
+namespace ScreenSound.API.Requests;
 
-public record MusicaRequestEdit(string nome, int artistaId, int id, int anoLancamento) : MusicaRequest(nome, artistaId, id, anoLancamento);
+public record MusicaRequestEdit(string NomeEdit, int? ArtistaIdEdit, int IdEdit, int? AnoLancamentoEdit)
+    : MusicaRequest(NomeEdit, ArtistaIdEdit, IdEdit, AnoLancamentoEdit);
