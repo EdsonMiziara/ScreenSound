@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using ScreenSound.API.Endpoints;
-using ScreenSound.Shared.Data.Banco;
-using ScreenSound.Models;
 using System.Text.Json.Serialization;
+using ScreenSound.Banco;
+using ScreenSound.Modelos;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,4 +23,3 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.Run();
-

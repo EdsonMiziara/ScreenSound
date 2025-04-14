@@ -2,8 +2,9 @@
 using ScreenSound.API.Request;
 using ScreenSound.API.Requests;
 using ScreenSound.API.Response;
-using ScreenSound.Shared.Data.Banco;
-using ScreenSound.Models;
+using ScreenSound.Banco;
+using ScreenSound.Modelos;
+
 
 namespace ScreenSound.API.Endpoints;
 

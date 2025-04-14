@@ -1,4 +1,4 @@
-﻿namespace ScreenSound.Models;
+﻿namespace ScreenSound.Modelos;
 
 interface IAvaliavel
 {

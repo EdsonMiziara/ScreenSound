@@ -11,7 +11,7 @@ using ScreenSound.Banco;
 namespace ScreenSound.Migrations
 {
     [DbContext(typeof(ScreenSoundContext))]
-    [Migration("20250407231041_projetoInicial")]
+    [Migration("20231201055531_projetoInicial")]
     partial class projetoInicial
     {
         /// <inheritdoc />
@@ -19,12 +19,12 @@ namespace ScreenSound.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.3")
+                .HasAnnotation("ProductVersion", "7.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("ScreenSound.Models.Artista", b =>
+            modelBuilder.Entity("ScreenSound.Modelos.Artista", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -49,7 +49,7 @@ namespace ScreenSound.Migrations
                     b.ToTable("Artistas");
                 });
 
-            modelBuilder.Entity("ScreenSound.Models.Musica", b =>
+            modelBuilder.Entity("ScreenSound.Modelos.Musica", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

@@ -1,11 +1,11 @@
-﻿using ScreenSound.Models;
+﻿using ScreenSound.Modelos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ScreenSoundShared.Modelos.Models;
+namespace ScreenSound.Modelos;
 
 public class Genero
 {

@@ -1,5 +1,4 @@
-﻿
-namespace ScreenSound.Models;
+﻿namespace ScreenSound.Modelos;
 
 public class Artista : IAvaliavel
 {
@@ -43,7 +42,8 @@ public class Artista : IAvaliavel
     public void ExibirDiscografia()
     {
         Console.WriteLine($"Discografia da banda {Nome}");
-        foreach (var musica in Musicas) { 
+        foreach (var musica in Musicas)
+        {
             Console.WriteLine($"Musicas: {musica.Nome})");
         }
     }

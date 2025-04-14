@@ -5,14 +5,14 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
-namespace ScreenSound.Models;
+namespace ScreenSound.Modelos;
 
 
 public class Avaliacao
 {
     public Avaliacao(int nota)
     {
-        if(nota <= 10 && nota >= 0)
+        if (nota <= 10 && nota >= 0)
         {
             Nota = nota;
         }

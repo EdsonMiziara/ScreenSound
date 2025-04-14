@@ -1,6 +1,4 @@
-﻿using ScreenSoundShared.Modelos.Models;
-
-namespace ScreenSound.Models;
+﻿namespace ScreenSound.Modelos;
 
 public class Musica : IAvaliavel
 {
@@ -22,7 +20,7 @@ public class Musica : IAvaliavel
     public override string ToString()
     {
         return @$"Id: {Id}
-        Nome: {Nome}";
+         Nome: {Nome}";
     }
 
 

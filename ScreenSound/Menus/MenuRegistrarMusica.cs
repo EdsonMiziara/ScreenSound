@@ -1,6 +1,6 @@
 ﻿using ScreenSound.Banco;
 using ScreenSound.Menus;
-using ScreenSound.Models;
+using ScreenSound.Modelos;
 using System;
 using System.Collections.Generic;
 using System.Linq;

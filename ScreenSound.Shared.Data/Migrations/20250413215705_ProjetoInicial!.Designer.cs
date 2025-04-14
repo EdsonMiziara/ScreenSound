@@ -11,20 +11,23 @@ using ScreenSound.Banco;
 namespace ScreenSound.Migrations
 {
     [DbContext(typeof(ScreenSoundContext))]
-    [Migration("20250408180617_PopularTabelaMusicas")]
-    partial class PopularTabelaMusicas
+    [Migration("20250413215705_ProjetoInicial!")]
+    partial class ProjetoInicial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.3")
+                .HasAnnotation("ProductVersion", "9.0.4")
+                .HasAnnotation("Proxies:ChangeTracking", false)
+                .HasAnnotation("Proxies:CheckEquality", false)
+                .HasAnnotation("Proxies:LazyLoading", true)
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("ScreenSound.Models.Artista", b =>
+            modelBuilder.Entity("ScreenSound.Modelos.Artista", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -49,7 +52,7 @@ namespace ScreenSound.Migrations
                     b.ToTable("Artistas");
                 });
 
-            modelBuilder.Entity("ScreenSound.Models.Musica", b =>
+            modelBuilder.Entity("ScreenSound.Modelos.Musica", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -60,13 +63,32 @@ namespace ScreenSound.Migrations
                     b.Property<int?>("AnoLancamento")
                         .HasColumnType("int");
 
+                    b.Property<int?>("ArtistaId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ArtistaId");
+
                     b.ToTable("Musicas");
+                });
+
+            modelBuilder.Entity("ScreenSound.Modelos.Musica", b =>
+                {
+                    b.HasOne("ScreenSound.Modelos.Artista", "Artista")
+                        .WithMany("Musicas")
+                        .HasForeignKey("ArtistaId");
+
+                    b.Navigation("Artista");
+                });
+
+            modelBuilder.Entity("ScreenSound.Modelos.Artista", b =>
+                {
+                    b.Navigation("Musicas");
                 });
 #pragma warning restore 612, 618
         }

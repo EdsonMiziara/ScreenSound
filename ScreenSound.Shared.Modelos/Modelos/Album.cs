@@ -1,6 +1,6 @@
 ﻿using System.Security.Principal;
 
-namespace ScreenSound.Models;
+namespace ScreenSound.Modelos;
 public class Album : IAvaliavel
 {
     public virtual ICollection<Musica> Musicas { get; set; } = new List<Musica>();
