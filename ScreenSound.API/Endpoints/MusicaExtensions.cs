@@ -5,7 +5,6 @@ using ScreenSound.API.Response;
 using ScreenSound.Banco;
 using ScreenSound.Modelos;
 
-
 namespace ScreenSound.API.Endpoints;
 
 public static class MusicaExtensions
@@ -19,7 +18,7 @@ public static class MusicaExtensions
 
         app.MapGet("/Musicas/{nome}", ([FromServices] DAL<Musica> dal, string nome) =>
         {
-            var musicaRequest = dal.RecuperarDTO(a => a.Nome.ToUpperInvariant() == nome.ToUpperInvariant(), a => new MusicaRequest(a.Nome, a.ArtistaId, a.Id, a.AnoLancamento));
+            var musicaRequest = dal.RecuperarDTO(a => a.Nome.ToUpperInvariant() == nome.ToUpperInvariant(), a => new MusicaRequest(a.Nome, a.ArtistaId, a.AnoLancamento));
 
             if (musicaRequest is null)
             {
@@ -32,7 +31,12 @@ public static class MusicaExtensions
 
         app.MapPost("/Musicas", ([FromServices] DAL<Musica> dal, [FromBody] MusicaRequest musicaRequest) =>
         {
-            var musica = new Musica(musicaRequest.ArtistaId, musicaRequest.Nome);
+            var musica = new Musica(musicaRequest.Nome) 
+            {
+                ArtistaId = musicaRequest.ArtistaId,
+                AnoLancamento = musicaRequest.AnoLancamento,
+                Generos = musicaRequest.Generos is not null? GeneroRequestConverter(musicaRequest.Generos) : new List<Genero>()
+            };
             dal.Adicionar(musica);
             return Results.Ok();
         });
@@ -55,12 +59,25 @@ public static class MusicaExtensions
                 return Results.NotFound();
             }
             musicaAAtualizar.Nome = musicaRequestEdit.Nome;
-            musicaAAtualizar.AnoLancamento = musicaRequestEdit.AnoLancamentoEdit;
+            musicaAAtualizar.AnoLancamento = musicaRequestEdit.AnoLancamento;
 
             dal.Atualizar(musicaAAtualizar);
             return Results.Ok();
         });
 
+    }
+
+    private static ICollection<Genero> GeneroRequestConverter(ICollection<GeneroRequest> generos)
+    {
+        return generos.Select(a => RequestToEntity(a)).ToList();
+    }
+    private static Genero RequestToEntity(GeneroRequest genero)
+    {
+        return new Genero()
+        {
+            Nome = genero.Nome,
+            Descricao = genero.Descricao
+        };
     }
 
     private static ICollection<MusicaResponse> EntityListToResponseList(IEnumerable<Musica> musicaList)

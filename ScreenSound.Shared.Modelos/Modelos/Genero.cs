@@ -9,6 +9,13 @@ namespace ScreenSound.Modelos;
 
 public class Genero
 {
+    public Genero(string nome, string descricao)
+    {
+        Nome = nome;
+        Descricao = descricao;
+    }
+    public Genero() { }
+
     public virtual ICollection<Musica> Musicas { get; set; } = new List<Musica>();
     public int Id { get; set; }
     public string? Nome { get; set; } = string.Empty;
