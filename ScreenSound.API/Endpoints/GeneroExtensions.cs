@@ -12,13 +12,13 @@ public static class GeneroExtensions
     {
         app.MapGet("/Generos", ([FromServices] DAL<Genero> dal) =>
         {
-            return Results.Ok(dal.Listar());
+            return Results.Ok(dal.Listar().Select(g => new GeneroRequest(g.Nome, g.Descricao, g.Id)));
         });
 
         app.MapGet("/Generos/{nome}", ([FromServices] DAL<Genero> dal, string nome) => 
         {
             #nullable disable
-            var GeneroRequest = dal.RecuperarDTO(a => a.Nome.ToUpperInvariant().Equals(nome.ToUpperInvariant()), a => new GeneroRequest(a.Nome, a.Descricao));
+            var GeneroRequest = dal.RecuperarDTO(a => a.Nome.ToUpperInvariant().Equals(nome.ToUpperInvariant()), a => new GeneroRequest(a.Nome, a.Descricao, a.Id));
             if (GeneroRequest is null) 
             {
                 return Results.NotFound();
@@ -28,13 +28,13 @@ public static class GeneroExtensions
 
         app.MapPost("/Generos", ([FromServices] DAL<Genero> dal, [FromBody] GeneroRequest generoRequest) =>
         {
-            var genero = new Genero(generoRequest.Nome, generoRequest.Descricao);
+            var genero = new Genero(generoRequest.Nome, generoRequest.DescricaoGenero);
             dal.Adicionar(genero);
             return Results.Ok(genero);
 
         });
 
-        app.MapDelete("/Generos", ([FromServices] DAL<Genero> dal, int id) => 
+        app.MapDelete("/Generos/{id}", ([FromServices] DAL<Genero> dal, int id) => 
         {
             var musica = dal.RecuperarPor(a => a.Id == id);
             if (musica is null)

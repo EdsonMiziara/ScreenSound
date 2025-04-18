@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -38,21 +39,20 @@ public class DAL<T> where T : class
         context.SaveChanges();
 
     }
-    public T? RecuperarPor(Func<T, bool> condição)
+    public T? RecuperarPor(Expression<Func<T, bool>> condição)
     {
         return context.Set<T>().AsNoTracking().FirstOrDefault(condição);
-
     }
-    public IEnumerable<T> ListarPor(Func<T, bool> condicao)
+    public IEnumerable<T> ListarPor(Expression<Func<T, bool>> condicao)
     {
         return context.Set<T>().Where(condicao);
     }
-    public TResult? RecuperarDTO<TResult>(Func<T, bool> condicao, Func<T, TResult> seletor)
+    public TResult? RecuperarDTO<TResult>(Expression<Func<T, bool>> condicao, Expression<Func<T, TResult>> seletor)
     {
         return context.Set<T>().AsNoTracking().Where(condicao).Select(seletor).FirstOrDefault();
     }
 
-    public IEnumerable<TResult> ListarDTO<TResult>(Func<T, bool> condicao, Func<T, TResult> seletor)
+    public IEnumerable<TResult> ListarDTO<TResult>(Expression<Func<T, bool>> condicao, Expression<Func<T, TResult>> seletor)
     {
         return context.Set<T>().AsNoTracking().Where(condicao).Select(seletor).ToList();
     }

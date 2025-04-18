@@ -5,4 +5,4 @@ using System.Runtime.CompilerServices;
 
 namespace ScreenSound.API.Requests;
 
-public record class GeneroRequest(string Nome, string Descricao, int? Id = null);
+public record class GeneroRequest(string Nome, string? DescricaoGenero = null, int? Id = null);
