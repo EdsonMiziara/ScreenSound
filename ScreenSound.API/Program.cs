@@ -8,10 +8,21 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configuração do CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllOrigins", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddDbContext<ScreenSoundContext>((options) =>
 {
     options.UseSqlServer(builder.Configuration["ConnectionStrings:ScreenSoundDB"])
-    .UseLazyLoadingProxies();
+           .UseLazyLoadingProxies();
 });
 builder.Services.AddTransient<DAL<Artista>>();
 builder.Services.AddTransient<DAL<Musica>>();
@@ -21,6 +32,9 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options => options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 var app = builder.Build();
+
+// Use o middleware do CORS
+app.UseCors("AllowAllOrigins");
 
 app.AddEndPointsArtistas();
 app.AddEndPointsMusicas();

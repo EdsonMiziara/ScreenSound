@@ -1,0 +1,48 @@
+﻿@page "/Artistas"
+@inject ArtistaAPI artistaAPI
+<h3>Artistas</h3>
+
+@if (artistas == null)
+{
+	<p>❌ A lista de artistas está nula.</p>
+}
+else if (!artistas.Any())
+{
+	<p>⚠️ Nenhum artista encontrado.</p>
+}
+else
+{
+	<p>✅ Total de artistas: @artistas.Count</p>
+	@foreach (var artista in artistas)
+	{
+		<div>
+			<strong>@artista.Nome</strong><br />
+			<img src="@artista.FotoPerfil" width="100" /><br />
+			<em>@artista.Bio</em>
+		</div>
+		<hr />
+	}
+}
+
+@code {
+	private ICollection<ArtistaResponse>? artistas;
+
+	protected override async Task OnInitializedAsync()
+	{
+		artistas = await artistaAPI.GetArtistasAsync();
+		if (artistas == null)
+		{
+			Console.WriteLine("A lista de artistas está nula.");
+		}
+		else if (!artistas.Any())
+		{
+			Console.WriteLine("A lista de artistas está vazia.");
+		}
+		else
+		{
+			Console.WriteLine($"Artistas carregados: {artistas.Count}");
+		}
+
+	}
+
+}

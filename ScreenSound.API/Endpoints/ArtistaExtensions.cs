@@ -12,7 +12,9 @@ public static class ArtistasExtensions
     {
         app.MapGet("/Artistas", ([FromServices] DAL<Artista> DAL) =>
         {
-            return Results.Ok(DAL.Listar());
+            var lista = DAL.Listar();
+            var resposta = EntityListToResponseList(lista);
+            return Results.Ok(resposta);
         });
 
         app.MapGet("/Artistas/{Nome}", ([FromServices] DAL<Artista> dal, string Nome) =>
