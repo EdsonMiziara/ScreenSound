@@ -19,7 +19,7 @@ public static class ArtistasExtensions
 
         app.MapGet("/Artistas/{Nome}", ([FromServices] DAL<Artista> dal, string Nome) =>
         {
-            var artistaRequest = dal.RecuperarDTO(a => a.Nome.ToUpperInvariant() == Nome.ToUpperInvariant(), a => new ArtistaRequest(a.Nome, a.Bio));
+            var artistaRequest = dal.RecuperarDTO(a => a.Nome.ToUpper() == Nome.ToUpper(), a => new ArtistaRequest(a.Nome, a.Bio));
 
             if (artistaRequest is null)
             {

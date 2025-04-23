@@ -1,4 +1,5 @@
-﻿using ScreenSound.Web.Response;
+﻿using ScreenSound.Web.Request;
+using ScreenSound.Web.Response;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -46,6 +47,19 @@ public class ArtistaAPI
             Console.WriteLine($"❌ Erro ao buscar artistas: {ex.Message}");
             return null;
         }
+    }
+
+    public async Task AddArtistaAsync(ArtistaRequest artista)
+    {
+        await _httpClient.PostAsJsonAsync("artistas", artista);
+    }
+    public async Task DeleteArtistaAsync(int id)
+    {
+        await _httpClient.DeleteAsync($"artistas/{id}");
+    }
+    public async Task<ArtistaResponse?> GetArtistaPorNomeAsync(string nome)
+    {
+        return await _httpClient.GetFromJsonAsync<ArtistaResponse>($"artistas/{nome}");
     }
 
 }

@@ -10,18 +10,17 @@ else if (!artistas.Any())
 {
 	<p>⚠️ Nenhum artista encontrado.</p>
 }
-else
+else if (artistas is not null)
 {
 	<p>✅ Total de artistas: @artistas.Count</p>
-	@foreach (var artista in artistas)
-	{
-		<div>
-			<strong>@artista.Nome</strong><br />
-			<img src="@artista.FotoPerfil" width="100" /><br />
-			<em>@artista.Bio</em>
-		</div>
-		<hr />
-	}
+	<MudGrid>
+		@foreach (var artista in artistas)
+		{
+			<MudItem xs="3">
+			<CardArtista Artista ="artista" />
+			</MudItem>
+		}
+	</MudGrid>
 }
 
 @code {

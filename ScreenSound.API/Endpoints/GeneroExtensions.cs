@@ -18,7 +18,7 @@ public static class GeneroExtensions
         app.MapGet("/Generos/{nome}", ([FromServices] DAL<Genero> dal, string nome) => 
         {
             #nullable disable
-            var GeneroRequest = dal.RecuperarDTO(a => a.Nome.ToUpperInvariant().Equals(nome.ToUpperInvariant()), a => new GeneroRequest(a.Nome, a.Descricao, a.Id));
+            var GeneroRequest = dal.RecuperarDTO(a => a.Nome.ToUpper().Equals(nome.ToUpper()), a => new GeneroRequest(a.Nome, a.Descricao, a.Id));
             if (GeneroRequest is null) 
             {
                 return Results.NotFound();

@@ -73,7 +73,7 @@ public static class MusicaExtensions
         foreach (var item in generos) 
         {
             var entity = RequestToEntity(item);
-            var genero = dalGenero.RecuperarPor(g => g.Nome.ToUpperInvariant().Equals(item.Nome.ToUpperInvariant()));
+            var genero = dalGenero.RecuperarPor(g => g.Nome.ToUpper().Equals(item.Nome.ToUpper()));
             if (genero is not null)
             {
                 listaDeGeneros.Add(genero);
