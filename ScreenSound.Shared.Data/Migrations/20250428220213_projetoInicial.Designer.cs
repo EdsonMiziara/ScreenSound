@@ -8,11 +8,11 @@ using ScreenSound.Banco;
 
 #nullable disable
 
-namespace ScreenSound.Migrations
+namespace ScreenSound.Shared.Data.Migrations
 {
     [DbContext(typeof(ScreenSoundContext))]
-    [Migration("20250424034124_NovoBanco")]
-    partial class NovoBanco
+    [Migration("20250428220213_projetoInicial")]
+    partial class projetoInicial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

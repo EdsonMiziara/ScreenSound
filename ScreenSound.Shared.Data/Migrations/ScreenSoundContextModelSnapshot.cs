@@ -7,7 +7,7 @@ using ScreenSound.Banco;
 
 #nullable disable
 
-namespace ScreenSound.Migrations
+namespace ScreenSound.Shared.Data.Migrations
 {
     [DbContext(typeof(ScreenSoundContext))]
     partial class ScreenSoundContextModelSnapshot : ModelSnapshot
