@@ -34,7 +34,7 @@ public static class MusicaExtensions
                 ArtistaId = musicaRequest.ArtistaId,
                 AnoLancamento = musicaRequest.anoLancamento,
                 Generos = musicaRequest.Generos is not null ? GeneroRequestConverter(musicaRequest.Generos, dalGenero) :
-                new List<Genero>()
+        new List<Genero>()
 
             };
             dal.Adicionar(musica);
@@ -70,22 +70,26 @@ public static class MusicaExtensions
     private static ICollection<Genero> GeneroRequestConverter(ICollection<GeneroRequest> generos, DAL<Genero> dalGenero)
     {
         var listaDeGeneros = new List<Genero>();
-        foreach (var item in generos) 
+        foreach (var item in generos)
         {
-            var entity = RequestToEntity(item);
-            var genero = dalGenero.RecuperarPor(g => g.Nome.ToUpper().Equals(item.Nome.ToUpper()));
-            if (genero is not null)
+            // Verifique se o gênero já existe no banco
+            var generoExistente = dalGenero.RecuperarPor(g => g.Nome.ToUpper().Equals(item.Nome.ToUpper()));
+            if (generoExistente is not null)
             {
-                listaDeGeneros.Add(genero);
+                // Se o gênero já existe, não precisa criar um novo, apenas o adicionamos à lista
+                listaDeGeneros.Add(generoExistente);
             }
             else
             {
-                listaDeGeneros.Add(entity);
+                // Crie um novo gênero se ele não existir
+                var novoGenero = RequestToEntity(item);
+                listaDeGeneros.Add(novoGenero);
             }
         }
 
-        return generos.Select(a => RequestToEntity(a)).ToList();
+        return listaDeGeneros;
     }
+
     private static Genero RequestToEntity(GeneroRequest genero)
     {
         return new Genero()

@@ -1,23 +1,29 @@
 ﻿@page "/Artistas"
 @inject ArtistaAPI artistaAPI
-<h3>Artistas</h3>
 
-@if (artistas == null)
+
+<MudStack Class="mt-4 mb-4" Row="true" Justify="Justify.SpaceBetween">
+	<MudText Class="mb-4" Typo="Typo.h4">Artistas cadastrados</MudText>
+	<MudPagination Count="@totalPaginas" SelectedChanged="PaginaMudou"></MudPagination>
+</MudStack>
+
+
+@if (artistasPorPagina == null)
 {
 	<p>❌ A lista de artistas está nula.</p>
 }
-else if (!artistas.Any())
+else if (!artistasPorPagina.Any())
 {
 	<p>⚠️ Nenhum artista encontrado.</p>
 }
-else if (artistas is not null)
+else if (artistasPorPagina is not null)
 {
-	<p>✅ Total de artistas: @artistas.Count</p>
+	<p>✅ Total de artistas: @artistasPorPagina.Count</p>
 	<MudGrid>
-		@foreach (var artista in artistas)
+		@foreach (var artista in artistasPorPagina)
 		{
 			<MudItem xs="3">
-			<CardArtista Artista ="artista" />
+				<CardArtista Artista ="artista" />
 			</MudItem>
 		}
 	</MudGrid>
@@ -25,23 +31,30 @@ else if (artistas is not null)
 
 @code {
 	private ICollection<ArtistaResponse>? artistas;
+	private ICollection<ArtistaResponse>? artistasPorPagina;
+	private int tamanho = 8;
+	private int totalItens;
+	private int totalPaginas;
 
 	protected override async Task OnInitializedAsync()
 	{
 		artistas = await artistaAPI.GetArtistasAsync();
-		if (artistas == null)
+		if (artistas is not null)
 		{
-			Console.WriteLine("A lista de artistas está nula.");
-		}
-		else if (!artistas.Any())
-		{
-			Console.WriteLine("A lista de artistas está vazia.");
-		}
-		else
-		{
-			Console.WriteLine($"Artistas carregados: {artistas.Count}");
+			artistas = artistas.OrderByDescending(a => a.Id).ToList();
+			totalItens = artistas.Count();
+			totalPaginas = Convert.ToInt32(Math.Ceiling((double)totalItens / tamanho));
+			this.PaginaMudou(1);
 		}
 
 	}
+
+	private void PaginaMudou(int pageNumber)
+	{
+		var indice = pageNumber - 1;
+		artistasPorPagina = artistas!.Skip(indice * tamanho).Take(tamanho).ToList();
+
+	}
+
 
 }

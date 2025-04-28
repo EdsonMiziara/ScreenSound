@@ -1,5 +1,77 @@
-﻿<h3>CadastrarMusica</h3>
+﻿@page "/CadastrarMusica"
+@inject ArtistaAPI artistaAPI
+@inject GeneroAPI generoAPI
+
+
+
+<MudPaper Class="px-8 pt-2 pb-4 mx-12 my-8" Justify="Justify.Center">
+
+    <MudText Class="mt-8" Typo="Typo.h4">Cadastro de Música</MudText>
+
+    <MudForm>
+
+        <MudTextField Class="mt-4" T="string" Placeholder="Nome da música/canção"
+                      @bind-Value="Nome"
+                      Variant="Variant.Outlined"
+                      Required="true"
+                      RequiredError="Campo obrigatório." />
+        <MudSelect Class="mt-4" T="ArtistaResponse" Label="Artistas"
+                   Variant="Variant.Filled" AnchorOrigin="Origin.BottomCenter">
+			@if (Artistas is not null)
+			{
+                @foreach (var artista in Artistas)
+                {
+                    <MudSelectItem Value="artista" />
+                }
+			}
+
+        </MudSelect>
+
+        <MudTextField Class="mt-4" T="int" Placeholder="Ano de lançamento"
+                      @bind-Value="AnoLancamento"
+                      Variant="Variant.Outlined"
+                      Lines="1"
+                      Required="true"
+                      RequiredError="Campo obrigatório." />
+
+        <MudSelect Class="mt-4" T="GeneroResponse" Label="Gêneros"
+                   Variant="Variant.Filled" AnchorOrigin="Origin.BottomCenter">
+            @if (Generos is not null)
+            {
+                @foreach (var genero in Generos)
+                {
+                    <MudSelectItem Value="genero" />
+                }
+            }
+        </MudSelect>
+
+        <div class="d-flex align-center justify-space-between mt-4">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Class="ml-auto">
+                Cadastrar
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Info"
+                       Class="ml-3">
+                Voltar
+            </MudButton>
+        </div>
+
+    </MudForm>
+
+</MudPaper>
 
 @code {
+    private int AnoLancamento;
+    private string? Nome;
 
+    private ICollection<ArtistaResponse>? Artistas;
+    private ICollection<GeneroResponse>? Generos;
+
+	protected override async Task OnInitializedAsync()
+	{
+		Artistas = await artistaAPI.GetArtistasAsync();
+		Generos = await generoAPI.GetGenerosAsync();
+	}
 }

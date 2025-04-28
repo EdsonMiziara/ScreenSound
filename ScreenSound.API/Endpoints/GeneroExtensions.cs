@@ -12,13 +12,13 @@ public static class GeneroExtensions
     {
         app.MapGet("/Generos", ([FromServices] DAL<Genero> dal) =>
         {
-            return Results.Ok(dal.Listar().Select(g => new GeneroRequest(g.Nome, g.Descricao, g.Id)));
+            return Results.Ok(dal.Listar().Select(g => new GeneroRequest(g.Nome, g.Descricao)));
         });
 
         app.MapGet("/Generos/{nome}", ([FromServices] DAL<Genero> dal, string nome) => 
         {
             #nullable disable
-            var GeneroRequest = dal.RecuperarDTO(a => a.Nome.ToUpper().Equals(nome.ToUpper()), a => new GeneroRequest(a.Nome, a.Descricao, a.Id));
+            var GeneroRequest = dal.RecuperarDTO(a => a.Nome.ToUpper().Equals(nome.ToUpper()), a => new GeneroRequest(a.Nome, a.Descricao));
             if (GeneroRequest is null) 
             {
                 return Results.NotFound();

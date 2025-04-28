@@ -5,15 +5,16 @@ using ScreenSound.Banco;
 using ScreenSound.Modelos;
 using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configuração do CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAllOrigins", builder =>
+    options.AddPolicy("AllowSpecificOrigin", builder =>
     {
-        builder.AllowAnyOrigin()
+        builder.WithOrigins("https://localhost:7265")
                .AllowAnyMethod()
                .AllowAnyHeader();
     });
@@ -34,7 +35,14 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =
 var app = builder.Build();
 
 // Use o middleware do CORS
-app.UseCors("AllowAllOrigins");
+app.UseCors("AllowSpecificOrigin");
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "FotosPerfil")),
+    RequestPath = "/FotosPerfil"
+});
+
 
 app.AddEndPointsArtistas();
 app.AddEndPointsMusicas();

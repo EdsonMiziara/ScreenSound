@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using ScreenSound.API.Request;
 using ScreenSound.API.Response;
 using ScreenSound.Banco;
@@ -19,7 +20,7 @@ public static class ArtistasExtensions
 
         app.MapGet("/Artistas/{Nome}", ([FromServices] DAL<Artista> dal, string Nome) =>
         {
-            var artistaRequest = dal.RecuperarDTO(a => a.Nome.ToUpper() == Nome.ToUpper(), a => new ArtistaRequest(a.Nome, a.Bio));
+            var artistaRequest = dal.RecuperarDTO(a => a.Nome.ToUpper() == Nome.ToUpper(), a => new ArtistaRequest(a.Nome, a.Bio, a.FotoPerfil));
 
             if (artistaRequest is null)
             {
@@ -29,9 +30,21 @@ public static class ArtistasExtensions
             return Results.Ok(artistaRequest);
         });
 
-        app.MapPost("/Artistas", ([FromServices] DAL<Artista> DAL, [FromBody] ArtistaRequest artistaRequest) =>
+        app.MapPost("/Artistas", async ([FromServices] IHostEnvironment env,[FromServices] DAL<Artista> DAL, [FromBody] ArtistaRequest artistaRequest) =>
         {
-            var artista = new Artista(artistaRequest.nome, artistaRequest.bio);
+            var nome = artistaRequest.nome.Trim();
+            var imagemArtista = DateTime.Now.ToString("ddMMyyyyhhss") + "." + nome + ".jpeg";
+
+            var path = Path.Combine(env.ContentRootPath, "wwwroot", "FotosPerfil", imagemArtista);
+
+            using MemoryStream ms = new MemoryStream(Convert.FromBase64String(artistaRequest.fotoPerfil!));
+            using FileStream fs = new FileStream(path, FileMode.Create);
+            await fs.CopyToAsync(fs);
+
+            var artista = new Artista(artistaRequest.nome, artistaRequest.bio) 
+            {
+                FotoPerfil = $"/FotoPerfil/{imagemArtista}"
+            };
             DAL.Adicionar(artista);
             return Results.Ok();
         });

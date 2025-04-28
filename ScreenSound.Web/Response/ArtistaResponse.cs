@@ -7,4 +7,10 @@ public record ArtistaResponse(
     [property: JsonPropertyName("nome")] string Nome,
     [property: JsonPropertyName("bio")] string Bio,
     [property: JsonPropertyName("fotoPerfil")] string? FotoPerfil
-);
+)
+{
+    public override string ToString()
+    {
+        return $"{Nome}";
+    }
+}
