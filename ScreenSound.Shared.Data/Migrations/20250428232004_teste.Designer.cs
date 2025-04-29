@@ -11,8 +11,8 @@ using ScreenSound.Banco;
 namespace ScreenSound.Shared.Data.Migrations
 {
     [DbContext(typeof(ScreenSoundContext))]
-    [Migration("20250428220213_projetoInicial")]
-    partial class projetoInicial
+    [Migration("20250428232004_teste")]
+    partial class teste
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -156,10 +156,10 @@ namespace ScreenSound.Shared.Data.Migrations
                     b.Property<int?>("ArtistaId")
                         .HasColumnType("int");
 
-                    b.Property<bool>("Disponivel")
+                    b.Property<bool?>("Disponivel")
                         .HasColumnType("bit");
 
-                    b.Property<int>("Duracao")
+                    b.Property<int?>("Duracao")
                         .HasColumnType("int");
 
                     b.Property<string>("Nome")

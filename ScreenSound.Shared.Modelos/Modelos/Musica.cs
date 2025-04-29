@@ -15,7 +15,7 @@ public class Musica : IAvaliavel
     public virtual ICollection<Genero> Generos { get; set; } = new List<Genero>();
     public int? ArtistaId { get; set; }
     public virtual Album? Album { get; set; }
-    public int Duracao { get; set; }
+    public int? Duracao { get; set; }
 
     public override string ToString()
     {
@@ -35,7 +35,7 @@ public class Musica : IAvaliavel
         Nome = nome;
     }
 
-    public bool Disponivel { get; set; }
+    public bool? Disponivel { get; set; }
 
     public double Media
     {
@@ -50,7 +50,7 @@ public class Musica : IAvaliavel
         Console.WriteLine($"Nome: {Nome}");
         Console.WriteLine($"Artista: {Artista.Nome}");
         Console.WriteLine($"Duração: {Duracao}");
-        if (Disponivel)
+        if (Disponivel == true)
         {
             Console.WriteLine("Disponível no plano.");
         }

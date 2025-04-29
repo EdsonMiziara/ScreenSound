@@ -153,10 +153,10 @@ namespace ScreenSound.Shared.Data.Migrations
                     b.Property<int?>("ArtistaId")
                         .HasColumnType("int");
 
-                    b.Property<bool>("Disponivel")
+                    b.Property<bool?>("Disponivel")
                         .HasColumnType("bit");
 
-                    b.Property<int>("Duracao")
+                    b.Property<int?>("Duracao")
                         .HasColumnType("int");
 
                     b.Property<string>("Nome")

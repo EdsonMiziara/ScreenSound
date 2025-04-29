@@ -8,11 +8,11 @@ using ScreenSound.Banco;
 
 #nullable disable
 
-namespace ScreenSound.Migrations
+namespace ScreenSound.Shared.Data.Migrations
 {
     [DbContext(typeof(ScreenSoundContext))]
-    [Migration("20250414144421_Certeza")]
-    partial class Certeza
+    [Migration("20250428232025_teste1")]
+    partial class teste1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -156,10 +156,10 @@ namespace ScreenSound.Migrations
                     b.Property<int?>("ArtistaId")
                         .HasColumnType("int");
 
-                    b.Property<bool>("Disponivel")
+                    b.Property<bool?>("Disponivel")
                         .HasColumnType("bit");
 
-                    b.Property<int>("Duracao")
+                    b.Property<int?>("Duracao")
                         .HasColumnType("int");
 
                     b.Property<string>("Nome")

@@ -77,9 +77,10 @@ public static class MusicaExtensions
             if (generoExistente is not null)
             {
                 // Se o gênero já existe, não precisa criar um novo, apenas o adicionamos à lista
+                dalGenero.Attach(generoExistente);
                 listaDeGeneros.Add(generoExistente);
             }
-            else
+            else 
             {
                 // Crie um novo gênero se ele não existir
                 var novoGenero = RequestToEntity(item);

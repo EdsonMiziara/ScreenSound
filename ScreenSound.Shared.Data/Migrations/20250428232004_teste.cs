@@ -2,10 +2,10 @@
 
 #nullable disable
 
-namespace ScreenSound.Migrations
+namespace ScreenSound.Shared.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class Certeza : Migration
+    public partial class teste : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -12,7 +12,7 @@ public class Album : IAvaliavel
     }
 
     public string Nome { get; set; }
-    public int DuracaoTotal => Musicas.Sum(m => m.Duracao);
+    public int? DuracaoTotal => Musicas.Sum(m => m.Duracao);
     public int Id { get; set; }
 
     public double Media

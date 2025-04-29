@@ -39,6 +39,10 @@ public class DAL<T> where T : class
         context.SaveChanges();
 
     }
+    public void Attach(T entity)
+    {
+        context.Set<T>().Attach(entity);  
+    }
     public T? RecuperarPor(Expression<Func<T, bool>> condição)
     {
         return context.Set<T>().AsNoTracking().FirstOrDefault(condição);
