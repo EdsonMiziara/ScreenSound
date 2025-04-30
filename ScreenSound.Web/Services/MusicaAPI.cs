@@ -1,7 +1,9 @@
 ﻿
 using ScreenSound.Modelos;
+using ScreenSound.Web.Requests;
 using ScreenSound.Web.Response;
 using System.Collections;
+using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace ScreenSound.Web.Services;
@@ -47,5 +49,21 @@ public class MusicaAPI
             Console.WriteLine($"❌ Erro ao buscar artistas: {ex.Message}");
             return null;
         }
+    }
+    public async Task AddMusicaAsync(MusicaRequest musicaRequest)
+    {
+        await _httpClient.PostAsJsonAsync("Musicas/", musicaRequest);
+    }
+    public async Task DeleteMusicaAsync(int id)
+    {
+        await _httpClient.DeleteAsync($"Musicas/{id}");
+    }
+    public async Task<MusicaResponse?> GetMusicaPorNomeAsync(string nome)
+    {
+        return await _httpClient.GetFromJsonAsync<MusicaResponse>($"Musicas/{nome}");
+    }
+    public async Task UpdateMusicaAsync(MusicaRequestEdit musicaRequest)
+    {
+        await _httpClient.PutAsJsonAsync($"Musicas/", musicaRequest);
     }
 }

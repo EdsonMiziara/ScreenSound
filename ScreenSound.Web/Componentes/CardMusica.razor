@@ -1,4 +1,6 @@
-﻿<MudCard>
+﻿@inject ArtistaAPI artistaAPI
+
+<MudCard>
     <MudCardMedia Image="images/cardArtista.png"></MudCardMedia>
     <MudCardHeader>
         <CardHeaderContent>
@@ -6,12 +8,27 @@
         </CardHeaderContent>
     </MudCardHeader>
     <MudCardContent>
-        <MudText Typo="Typo.body2">Artista/Banda:@Musica!.NomeArtista</MudText>
+        <MudText Typo="Typo.body2">Artista/Banda:@Artista!.Nome</MudText>
     </MudCardContent>
+    <MudCardActions>
+        <MudButton Color="Color.Warning"
+                   Variant="Variant.Outlined"
+                   Href=@($"/EditarMusica/{Musica!.Nome}")>Detalhes</MudButton>
+    </MudCardActions>
 </MudCard>
 
 @code {
     [Parameter]
     public MusicaResponse? Musica { get; set; }
+	public ArtistaResponse? Artista { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        if (Musica?.ArtistaId != null)
+        {
+            Artista = await artistaAPI.GetArtistaPorIdAsync(Musica.ArtistaId);
+        }
+    }
+
+    
 
 }

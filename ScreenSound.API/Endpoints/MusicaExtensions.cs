@@ -52,14 +52,26 @@ public static class MusicaExtensions
 
         });
 
-        app.MapPut("/Musicas", ([FromServices] DAL<Musica> dal, [FromBody] MusicaRequestEdit musicaRequestEdit) => {
-            var musicaAAtualizar = dal.RecuperarPor(a => a.Id == musicaRequestEdit.IdEdit);
+        app.MapPut("/Musicas", ([FromServices] DAL<Musica> dal,[FromServices] DAL<Genero> dalGenero, [FromBody] MusicaRequestEdit musicaRequestEdit ) => {
+            var musicaAAtualizar = dal.RecuperarComInclude(a => a.Id == musicaRequestEdit.Id, a => ((Musica)(object)a).Generos  // cast necessário por generic
+);
             if (musicaAAtualizar is null)
             {
                 return Results.NotFound();
             }
             musicaAAtualizar.Nome = musicaRequestEdit.nome;
             musicaAAtualizar.AnoLancamento = musicaRequestEdit.anoLancamento;
+            musicaAAtualizar.ArtistaId = musicaRequestEdit.ArtistaId;
+            musicaAAtualizar.Generos.Clear(); // <- Isso remove as associações antigas
+
+            if (musicaRequestEdit.Generos is not null)
+            {
+                var novosGeneros = GeneroRequestConverter(musicaRequestEdit.Generos, dalGenero);
+                foreach (var genero in novosGeneros)
+                {
+                    musicaAAtualizar.Generos.Add(genero);
+                }
+            }
 
             dal.Atualizar(musicaAAtualizar);
             return Results.Ok();
@@ -67,29 +79,36 @@ public static class MusicaExtensions
 
     }
 
-    private static ICollection<Genero> GeneroRequestConverter(ICollection<GeneroRequest> generos, DAL<Genero> dalGenero)
+    private static ICollection<Genero> GeneroRequestConverter(ICollection<GeneroRequest> generos,DAL<Genero> dalGenero)
     {
         var listaDeGeneros = new List<Genero>();
+
+        // Carregue todos os gêneros existentes de uma vez para evitar múltiplas queries
+        var todosGeneros = dalGenero.Listar();
+
         foreach (var item in generos)
         {
-            // Verifique se o gênero já existe no banco
-            var generoExistente = dalGenero.RecuperarPor(g => g.Nome.ToUpper().Equals(item.Nome.ToUpper()));
+            var generoExistente = todosGeneros
+                .FirstOrDefault(g => g.Nome!.Equals(item.Nome, StringComparison.OrdinalIgnoreCase));
+
             if (generoExistente is not null)
             {
-                // Se o gênero já existe, não precisa criar um novo, apenas o adicionamos à lista
+                // Já existe: assegura que está trackeado
                 dalGenero.Attach(generoExistente);
                 listaDeGeneros.Add(generoExistente);
             }
-            else 
+            else
             {
-                // Crie um novo gênero se ele não existir
+                // Criar novo e adicionar ao banco com persistência
                 var novoGenero = RequestToEntity(item);
+                dalGenero.Adicionar(novoGenero); // Insere no banco
                 listaDeGeneros.Add(novoGenero);
             }
         }
 
         return listaDeGeneros;
     }
+
 
     private static Genero RequestToEntity(GeneroRequest genero)
     {

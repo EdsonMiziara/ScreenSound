@@ -35,6 +35,13 @@ public class Musica : IAvaliavel
         Nome = nome;
     }
 
+    public Musica(string nome, int anolancamento, int? artistaId, List<Genero> generos )
+    {
+        Nome = nome;
+        AnoLancamento = anolancamento;
+        ArtistaId = artistaId;
+        Generos = generos;
+    }
     public bool? Disponivel { get; set; }
 
     public double Media

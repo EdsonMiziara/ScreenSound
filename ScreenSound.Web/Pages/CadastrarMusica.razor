@@ -1,7 +1,8 @@
 ﻿@page "/CadastrarMusica"
 @inject ArtistaAPI artistaAPI
 @inject GeneroAPI generoAPI
-
+@inject MusicaAPI musicaAPI
+@inject NavigationManager navigationManager
 
 
 <MudPaper Class="px-8 pt-2 pb-4 mx-12 my-8" Justify="Justify.Center">
@@ -11,31 +12,33 @@
     <MudForm>
 
         <MudTextField Class="mt-4" T="string" Placeholder="Nome da música/canção"
-                      @bind-Value="Nome"
-                      Variant="Variant.Outlined"
-                      Required="true"
-                      RequiredError="Campo obrigatório." />
-        <MudSelect Class="mt-4" T="ArtistaResponse" Label="Artistas"
-                   Variant="Variant.Filled" ValueChanged="ArtistaSelecionado" AnchorOrigin="Origin.BottomCenter">
-			@if (Artistas is not null)
-			{
+        @bind-Value="Nome"
+        Variant="Variant.Outlined"
+        Required="true"
+        RequiredError="Campo obrigatório." />
+        <MudSelect T="ArtistaResponse"
+        Label="Artistas"
+        @bind-Value="ArtistaDaMusica"
+        Variant="Variant.Filled"
+        AnchorOrigin="Origin.BottomCenter">
+            @if (Artistas is not null)
+            {
                 @foreach (var artista in Artistas)
                 {
-                    <MudSelectItem Value="artista" />
+                    <MudSelectItem Value="artista">@artista.Nome</MudSelectItem>
                 }
-			}
-
+            }
         </MudSelect>
 
         <MudTextField Class="mt-4" T="int" Placeholder="Ano de lançamento"
-                      @bind-Value="AnoLancamento"
-                      Variant="Variant.Outlined"
-                      Lines="1"
-                      Required="true"
-                      RequiredError="Campo obrigatório." />
+        @bind-Value="AnoLancamento"
+        Variant="Variant.Outlined"
+        Lines="1"
+        Required="true"
+        RequiredError="Campo obrigatório." />
 
         <MudSelect Class="mt-4" T="GeneroResponse" Label="Gêneros"
-                   Variant="Variant.Filled" ValueChanged="GeneroSelecionado" AnchorOrigin="Origin.BottomCenter">
+        Variant="Variant.Filled" ValueChanged="GeneroSelecionado" AnchorOrigin="Origin.BottomCenter">
             @if (Generos is not null)
             {
                 @foreach (var genero in Generos)
@@ -43,24 +46,25 @@
                     <MudSelectItem Value="genero" />
                 }
             }
-			@if (GenerosSelecionados is not null)
-			{
-				@foreach (var genero in GenerosSelecionados)
-				{
-					<MudAlert Severity="Severity.Info">@(genero.Nome) adicionado como gênero da musica</MudAlert>
-				}
-			}
+            @if (GenerosSelecionados is not null)
+            {
+                @foreach (var genero in GenerosSelecionados)
+                {
+                    <MudAlert Severity="Severity.Info">@(genero.Nome) adicionado como gênero da musica</MudAlert>
+                }
+            }
         </MudSelect>
 
         <div class="d-flex align-center justify-space-between mt-4">
             <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       Class="ml-auto">
+            Color="Color.Primary"
+            OnClick="Cadastrar"
+            Class="ml-auto">
                 Cadastrar
             </MudButton>
             <MudButton Variant="Variant.Filled"
-                       Color="Color.Info"
-                       Class="ml-3">
+            Color="Color.Info"
+            Class="ml-3">
                 Voltar
             </MudButton>
         </div>
@@ -76,28 +80,52 @@
     private ICollection<ArtistaResponse>? Artistas;
     private ICollection<GeneroResponse>? Generos;
 
-	private List<GeneroResponse>? GenerosSelecionados { get; set; } = new();
-	private ArtistaResponse? ArtistaDaMusica{ get; set; }
+    private List<GeneroResponse>? GenerosSelecionados { get; set; } = new();
+    private ArtistaResponse? ArtistaDaMusica{ get; set; }
 
 
-	protected override async Task OnInitializedAsync()
-	{
-		Artistas = await artistaAPI.GetArtistasAsync();
-		Generos = await generoAPI.GetGenerosAsync();
-	}
-    private void ArtistaSelecionado(ArtistaResponse artista)
+    protected override async Task OnInitializedAsync()
     {
-        ArtistaDaMusica = artista;
+        Artistas = await artistaAPI.GetArtistasAsync();
+        Generos = await generoAPI.GetGenerosAsync();
     }
-	private void GeneroSelecionado(GeneroResponse genero)
-	{
-		if (GenerosSelecionados is not null)
-		{
-			if (!GenerosSelecionados.Contains(genero))
-			{
-				GenerosSelecionados.Add(genero);
-			}
-		}
-		
-	}
+    private void GeneroSelecionado(GeneroResponse genero)
+    {
+        if (GenerosSelecionados is not null)
+        {
+            if (!GenerosSelecionados.Contains(genero))
+            {
+                GenerosSelecionados.Add(genero);
+            }
+        }
+
+    }
+
+    private List<GeneroRequest> GenerosRequest { get; set; } = new(); 
+
+    public async Task Cadastrar()
+    {
+        Console.WriteLine($"Artista selecionado: {ArtistaDaMusica?.Nome}, ID: {ArtistaDaMusica?.Id}");
+        if (GenerosSelecionados is not null)
+        {
+            foreach (var genero in GenerosSelecionados)
+            {
+                GenerosRequest.Add(new GeneroRequest(genero.Nome, genero.DescricaoGenero));
+            }
+        }
+        if (ArtistaDaMusica is null)
+        {
+            Console.WriteLine("Artista não selecionado.");
+            return;
+        }
+
+        var musicaRequest = new MusicaRequest(Nome!, ArtistaDaMusica.Id, AnoLancamento, GenerosRequest);
+
+        await musicaAPI.AddMusicaAsync(musicaRequest);
+        navigationManager.NavigateTo("/Musicas");
+
+		navigationManager.NavigateTo("/Musicas");      
+
+
+    }
 }

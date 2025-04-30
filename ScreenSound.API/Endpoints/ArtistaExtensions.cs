@@ -30,6 +30,17 @@ public static class ArtistasExtensions
 
             return Results.Ok(artistaRequest);
         });
+        app.MapGet("/Artistas/RecuperaPor/{Id}", ([FromServices] DAL<Artista> dal, int Id) =>
+        {
+            var artistaRequest = dal.RecuperarDTO(a => a.Id == Id, a => new ArtistaRequest(a.Nome, a.Bio, a.FotoPerfil));
+
+            if (artistaRequest is null)
+            {
+                return Results.NotFound();
+            }
+
+            return Results.Ok(artistaRequest);
+        });
 
         app.MapPost("/Artistas", async ([FromServices] IHostEnvironment env,[FromServices] DAL<Artista> DAL, [FromBody] ArtistaRequest artistaRequest) =>
         {

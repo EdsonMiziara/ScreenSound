@@ -47,6 +47,17 @@ public class DAL<T> where T : class
     {
         return context.Set<T>().AsNoTracking().FirstOrDefault(condição);
     }
+    public T? RecuperarComInclude(Expression<Func<T, bool>> filtro, params Expression<Func<T, object>>[] includes)
+    {
+        IQueryable<T> query = context.Set<T>();
+
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        return query.FirstOrDefault(filtro);
+    }
     public IEnumerable<T> ListarPor(Expression<Func<T, bool>> condicao)
     {
         return context.Set<T>().Where(condicao);
