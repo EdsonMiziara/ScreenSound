@@ -12,7 +12,7 @@ public static class GeneroExtensions
     {
         app.MapGet("/Generos", ([FromServices] DAL<Genero> dal) =>
         {
-            return Results.Ok(dal.Listar().Select(g => new GeneroRequest(g.Nome, g.Descricao)));
+            return Results.Ok(dal.Listar().Select(g => new GeneroRequest(g.Nome!, g.Descricao)));
         });
 
         app.MapGet("/Generos/{nome}", ([FromServices] DAL<Genero> dal, string nome) => 

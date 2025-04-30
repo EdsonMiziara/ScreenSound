@@ -9,6 +9,12 @@ using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Host.ConfigureAppConfiguration((config) =>
+{
+    var settings = config.Build();
+    config.AddAzureAppConfiguration("Endpoint=https://screensound-configuration-edson.azconfig.io;Id=qECB;Secret=2wlvdCocXwxV7KacnFkF78uEmbM7vFHmE63jvOQVNkfMEVit6TJuJQQJ99BDACZoyfim4I5JAAACAZAC369A");
+});
+
 // Configuração do CORS
 builder.Services.AddCors(options =>
 {
