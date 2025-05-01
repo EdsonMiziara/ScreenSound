@@ -11,58 +11,49 @@ public static class MusicaExtensions
 {
     public static void AddEndPointsMusicas(this WebApplication app)
     {
-        app.MapGet("/Musicas", ([FromServices] DAL<Musica> dal) =>
+        var grupo = app.MapGroup("/Musicas").RequireCors("wasm");
+
+        grupo.MapGet("/", ([FromServices] DAL<Musica> dal) =>
         {
-            return Results.Ok(dal.Listar());
+            var lista = dal.Listar();
+            var resposta = EntityListToResponseList(lista);
+            return Results.Ok(resposta);
         });
 
-        app.MapGet("/Musicas/{nome}", ([FromServices] DAL<Musica> dal, string nome) =>
+        grupo.MapGet("/{nome}", ([FromServices] DAL<Musica> dal, string nome) =>
         {
             var musica = dal.RecuperarPor(a => a.Nome.ToUpper().Equals(nome.ToUpper()));
-            if (musica is null)
-            {
-                return Results.NotFound();
-            }
-            return Results.Ok(EntityToResponse(musica));
-
+            return musica is null ? Results.NotFound() : Results.Ok(EntityToResponse(musica));
         });
 
-        app.MapPost("/Musicas", ([FromServices] DAL<Musica> dal, [FromServices] DAL <Genero> dalGenero, [FromBody] MusicaRequest musicaRequest) =>
+        grupo.MapPost("/", ([FromServices] DAL<Musica> dal, [FromServices] DAL<Genero> dalGenero, [FromBody] MusicaRequest musicaRequest) =>
         {
             var musica = new Musica(musicaRequest.nome)
             {
                 ArtistaId = musicaRequest.ArtistaId,
                 AnoLancamento = musicaRequest.anoLancamento,
-                Generos = musicaRequest.Generos is not null ? GeneroRequestConverter(musicaRequest.Generos, dalGenero) :
-        new List<Genero>()
-
+                Generos = musicaRequest.Generos is not null
+                    ? GeneroRequestConverter(musicaRequest.Generos, dalGenero)
+                    : new List<Genero>()
             };
+
             dal.Adicionar(musica);
             return Results.Ok();
         });
 
-        app.MapDelete("/Musicas/{id}", ([FromServices] DAL<Musica> dal, int id) => {
-            var musica = dal.RecuperarPor(a => a.Id == id);
-            if (musica is null)
-            {
-                return Results.NotFound();
-            }
-            dal.Deletar(musica);
-            return Results.NoContent();
+        grupo.MapPut("/", ([FromServices] DAL<Musica> dal, [FromServices] DAL<Genero> dalGenero, [FromBody] MusicaRequestEdit musicaRequestEdit) =>
+        {
+            var musicaAAtualizar = dal.RecuperarComInclude(a => a.Id == musicaRequestEdit.Id, a => ((Musica)(object)a).Generos);
 
-        });
-
-        app.MapPut("/Musicas", ([FromServices] DAL<Musica> dal,[FromServices] DAL<Genero> dalGenero, [FromBody] MusicaRequestEdit musicaRequestEdit ) => {
-            var musicaAAtualizar = dal.RecuperarComInclude(a => a.Id == musicaRequestEdit.Id, a => ((Musica)(object)a).Generos  // cast necessário por generic
-);
             if (musicaAAtualizar is null)
             {
                 return Results.NotFound();
             }
+
             musicaAAtualizar.Nome = musicaRequestEdit.nome;
             musicaAAtualizar.AnoLancamento = musicaRequestEdit.anoLancamento;
             musicaAAtualizar.ArtistaId = musicaRequestEdit.ArtistaId;
-            musicaAAtualizar.Generos.Clear(); // <- Isso remove as associações antigas
+            musicaAAtualizar.Generos.Clear();
 
             if (musicaRequestEdit.Generos is not null)
             {
@@ -77,9 +68,16 @@ public static class MusicaExtensions
             return Results.Ok();
         });
 
+        grupo.MapDelete("/{id}", ([FromServices] DAL<Musica> dal, int id) =>
+        {
+            var musicaADeletar = dal.RecuperarPor(a => a.Id == id);
+            dal.Deletar(musicaADeletar!);
+            return musicaADeletar is null ? Results.NotFound() : Results.NoContent();
+        });
     }
 
-    private static ICollection<Genero> GeneroRequestConverter(ICollection<GeneroRequest> generos,DAL<Genero> dalGenero)
+
+    private static ICollection<Genero> GeneroRequestConverter(ICollection<GeneroRequest> generos, DAL<Genero> dalGenero)
     {
         var listaDeGeneros = new List<Genero>();
 
@@ -108,6 +106,7 @@ public static class MusicaExtensions
 
         return listaDeGeneros;
     }
+
 
 
     private static Genero RequestToEntity(GeneroRequest genero)

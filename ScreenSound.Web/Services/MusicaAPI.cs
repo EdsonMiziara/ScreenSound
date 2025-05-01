@@ -1,5 +1,4 @@
-﻿
-using ScreenSound.Modelos;
+﻿using ScreenSound.Modelos;
 using ScreenSound.Web.Requests;
 using ScreenSound.Web.Response;
 using System.Collections;
@@ -22,9 +21,9 @@ public class MusicaAPI
         try
         {
             // Log da URL antes da requisição
-            Console.WriteLine($"URL da requisição: {_httpClient.BaseAddress}Musicas");
+            Console.WriteLine($"URL da requisição: {_httpClient.BaseAddress}Musicas/");
 
-            var response = await _httpClient.GetAsync("musicas");
+            var response = await _httpClient.GetAsync("musicas/");
 
             if (!response.IsSuccessStatusCode)
             {

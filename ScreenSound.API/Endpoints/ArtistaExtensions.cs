@@ -12,48 +12,38 @@ public static class ArtistasExtensions
 {
     public static void AddEndPointsArtistas(this WebApplication app)
     {
-        app.MapGet("/Artistas", ([FromServices] DAL<Artista> DAL) =>
+        var grupo = app.MapGroup("/Artistas").RequireCors("wasm");
+
+        grupo.MapGet("/", ([FromServices] DAL<Artista> DAL) =>
         {
             var lista = DAL.Listar();
             var resposta = EntityListToResponseList(lista);
             return Results.Ok(resposta);
         });
 
-        app.MapGet("/Artistas/{Nome}", ([FromServices] DAL<Artista> dal, string Nome) =>
+        grupo.MapGet("/{Nome}", ([FromServices] DAL<Artista> dal, string Nome) =>
         {
             var artistaRequest = dal.RecuperarDTO(a => a.Nome.ToUpper() == Nome.ToUpper(), a => new ArtistaRequest(a.Nome, a.Bio, a.FotoPerfil));
-
-            if (artistaRequest is null)
-            {
-                return Results.NotFound();
-            }
-
-            return Results.Ok(artistaRequest);
+            return artistaRequest is null ? Results.NotFound() : Results.Ok(artistaRequest);
         });
-        app.MapGet("/Artistas/RecuperaPor/{Id}", ([FromServices] DAL<Artista> dal, int Id) =>
+
+        grupo.MapGet("/RecuperaPor/{Id}", ([FromServices] DAL<Artista> dal, int Id) =>
         {
             var artistaRequest = dal.RecuperarDTO(a => a.Id == Id, a => new ArtistaRequest(a.Nome, a.Bio, a.FotoPerfil));
-
-            if (artistaRequest is null)
-            {
-                return Results.NotFound();
-            }
-
-            return Results.Ok(artistaRequest);
+            return artistaRequest is null ? Results.NotFound() : Results.Ok(artistaRequest);
         });
 
-        app.MapPost("/Artistas", async ([FromServices] IHostEnvironment env,[FromServices] DAL<Artista> DAL, [FromBody] ArtistaRequest artistaRequest) =>
+        grupo.MapPost("/", async ([FromServices] IHostEnvironment env, [FromServices] DAL<Artista> DAL, [FromBody] ArtistaRequest artistaRequest) =>
         {
             if (artistaRequest.fotoPerfil is not null)
             {
                 var nome = artistaRequest.nome.Trim();
                 var imagemArtista = DateTime.Now.ToString("ddMMyyyyhhss") + "." + nome + ".jpeg";
-
                 var path = Path.Combine(env.ContentRootPath, "wwwroot", "FotosPerfil", imagemArtista);
 
-                using MemoryStream ms = new MemoryStream(Convert.FromBase64String(artistaRequest.fotoPerfil!));
-                using FileStream fs = new FileStream(path, FileMode.Create);
-                await fs.CopyToAsync(fs);
+                using MemoryStream ms = new(Convert.FromBase64String(artistaRequest.fotoPerfil!));
+                using FileStream fs = new(path, FileMode.Create);
+                await ms.CopyToAsync(fs);
 
                 var artista = new Artista(artistaRequest.nome, artistaRequest.bio)
                 {
@@ -69,29 +59,28 @@ public static class ArtistasExtensions
             return Results.Ok();
         });
 
-        app.MapDelete("/Artistas/{Id}", ([FromServices] DAL<Artista> DAL, int Id) =>
+        grupo.MapDelete("/{Id}", ([FromServices] DAL<Artista> DAL, int Id) =>
         {
             var artista = DAL.RecuperarPor(a => a.Id == Id);
-            if (artista is null)
-            {
-                return Results.NotFound(artista);
-            }
+            if (artista is null) return Results.NotFound();
             DAL.Deletar(artista);
             return Results.NoContent();
         });
 
-        app.MapPut("/Artistas", ([FromServices] DAL<Artista> dal, [FromBody] ArtistaRequestEdit artistaRequestEdit) => {
+        grupo.MapPut("/", ([FromServices] DAL<Artista> dal, [FromBody] ArtistaRequestEdit artistaRequestEdit) =>
+        {
             var artistaAAtualizar = dal.RecuperarPor(a => a.Id == artistaRequestEdit.id);
-            if (artistaAAtualizar is null)
-            {
-                return Results.NotFound();
-            }
+            if (artistaAAtualizar is null) return Results.NotFound();
+
             artistaAAtualizar.Nome = artistaRequestEdit.nome;
             artistaAAtualizar.Bio = artistaRequestEdit.bio;
             dal.Atualizar(artistaAAtualizar);
+
             return Results.Ok();
         });
     }
+
+
     private static ICollection<ArtistaResponse> EntityListToResponseList(IEnumerable<Artista> listaDeArtistas)
     {
         return listaDeArtistas.Select(a => EntityToResponse(a)).ToList();

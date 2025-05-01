@@ -1,34 +1,37 @@
 ﻿@inject ArtistaAPI artistaAPI
-
-<MudCard>
-    <MudCardMedia Image="images/cardArtista.png"></MudCardMedia>
-    <MudCardHeader>
-        <CardHeaderContent>
-            <MudText Typo="Typo.h6">@Musica!.Nome</MudText>
-        </CardHeaderContent>
-    </MudCardHeader>
-    <MudCardContent>
-        <MudText Typo="Typo.body2">Artista/Banda:@Artista!.Nome</MudText>
-    </MudCardContent>
-    <MudCardActions>
-        <MudButton Color="Color.Warning"
-                   Variant="Variant.Outlined"
-                   Href=@($"/EditarMusica/{Musica!.Nome}")>Detalhes</MudButton>
-    </MudCardActions>
-</MudCard>
-
+@if (Musica !=null && Artista !=null) {
+    <MudCard>
+        <MudCardMedia Image="images/cardArtista.png"></MudCardMedia>
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">@Musica!.Nome</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudText Typo="Typo.body2">Artista/Banda:@Artista!.Nome</MudText>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Color="Color.Warning"
+            Variant="Variant.Outlined"
+            Href=@($"/EditarMusica/{Musica!.Nome}")>Detalhes</MudButton>
+        </MudCardActions>
+    </MudCard>
+}
+else
+{
+    <MudText>Carregando dados...</MudText> <!-- Exibe uma mensagem enquanto os dados estão sendo carregados -->
+}
 @code {
     [Parameter]
     public MusicaResponse? Musica { get; set; }
-	public ArtistaResponse? Artista { get; set; }
+    public ArtistaResponse? Artista { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         if (Musica?.ArtistaId != null)
         {
+            // Evitar chamada se ArtistaId for nulo
             Artista = await artistaAPI.GetArtistaPorIdAsync(Musica.ArtistaId);
         }
     }
-
-    
-
 }

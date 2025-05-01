@@ -20,9 +20,9 @@ public class ArtistaAPI
         try
         {
             // Log da URL antes da requisição
-            Console.WriteLine($"URL da requisição: {_httpClient.BaseAddress}Artistas");
+            Console.WriteLine($"URL da requisição: {_httpClient.BaseAddress}Artistas/");
 
-            var response = await _httpClient.GetAsync("artistas");
+            var response = await _httpClient.GetAsync("artistas/");
 
             if (!response.IsSuccessStatusCode)
             {
@@ -68,7 +68,5 @@ public class ArtistaAPI
     public async Task UpdateArtistaAsync(ArtistaRequestEdit artista)
     {
         await _httpClient.PutAsJsonAsync("Artistas/", artista);
-
     }
 }
-
