@@ -2,6 +2,7 @@
 @inject ArtistaAPI artistaAPI
 @inject GeneroAPI generoAPI
 @inject MusicaAPI musicaAPI
+@inject ISnackbar Snackbar
 @inject NavigationManager navigationManager
 
 
@@ -9,7 +10,7 @@
 
     <MudText Class="mt-8" Typo="Typo.h4">Cadastro de Música</MudText>
 
-    <MudForm>
+    <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
 
         <MudTextField Class="mt-4" T="string" Placeholder="Nome da música/canção"
         @bind-Value="Nome"
@@ -74,6 +75,10 @@
 </MudPaper>
 
 @code {
+    bool success;
+    string[] errors = { };
+    MudForm? form;
+
     private int AnoLancamento;
     private string? Nome;
 
@@ -105,26 +110,26 @@
 
     public async Task Cadastrar()
     {
-        Console.WriteLine($"Artista selecionado: {ArtistaDaMusica?.Nome}, ID: {ArtistaDaMusica?.Id}");
-        if (GenerosSelecionados is not null)
+        try
         {
-            foreach (var genero in GenerosSelecionados)
+            if (GenerosSelecionados is not null)
             {
-                GenerosRequest.Add(new GeneroRequest(genero.Nome, genero.DescricaoGenero));
+                foreach (var genero in GenerosSelecionados)
+                {
+                    GenerosRequest.Add(new GeneroRequest(genero.Nome, genero.DescricaoGenero));
+                }
             }
-        }
-        if (ArtistaDaMusica is null)
-        {
-            Console.WriteLine("Artista não selecionado.");
-            return;
-        }
 
-        var musicaRequest = new MusicaRequest(Nome!, ArtistaDaMusica.Id, AnoLancamento, GenerosRequest);
+            var musicaRequest = new MusicaRequest(Nome!, ArtistaDaMusica!.Id, AnoLancamento, GenerosRequest);
 
-        await musicaAPI.AddMusicaAsync(musicaRequest);
-        navigationManager.NavigateTo("/Musicas");
-
-		navigationManager.NavigateTo("/Musicas");      
+            await musicaAPI.AddMusicaAsync(musicaRequest);
+			Snackbar.Add("Música cadastrada com sucesso!", Severity.Success);
+            navigationManager.NavigateTo("/Musicas");
+		}
+		catch (Exception)
+		{
+			//logger.LogInformation("Erro ao cadastrar música!");
+		}    
 
 
     }

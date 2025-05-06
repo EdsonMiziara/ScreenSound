@@ -10,7 +10,10 @@ public static class GeneroExtensions
 {
     public static void AddEndpointsGenero(this WebApplication app)
     {
-        var grupo = app.MapGroup("/Generos").RequireCors("wasm");
+        var grupo = app.MapGroup("/Generos")
+            .RequireCors("wasm")
+            .RequireAuthorization()
+            .WithTags("Generos");
 
         grupo.MapGet("/", ([FromServices] DAL<Genero> dal) =>
         {

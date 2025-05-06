@@ -2,6 +2,6 @@
 
 interface IAvaliavel
 {
-    void AdicionarNota(Avaliacao nota);
+    void AdicionarNota(int pessoaId, int nota);
     double Media { get; }
 }

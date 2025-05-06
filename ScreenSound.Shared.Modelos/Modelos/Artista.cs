@@ -31,9 +31,11 @@ public class Artista : IAvaliavel
         Albuns.Add(album);
     }
 
-    public void AdicionarNota(Avaliacao nota)
+    public void AdicionarNota(int pessoaId, int nota)
     {
-        Notas.Add(nota);
+        nota = Math.Min(Math.Max(nota, 1), 5);
+
+        Notas.Add(new Avaliacao(nota) { PessoaId = pessoaId });
     }
     public void AdicionarMusica(Musica musica)
     {

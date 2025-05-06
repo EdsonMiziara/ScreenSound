@@ -1,12 +1,13 @@
 ﻿@page "/CadastrarArtista"
 @inject ArtistaAPI artistasAPI
 @inject NavigationManager navigationManager
+@inject ISnackbar Snackbar
 
 <MudPaper Class="px-8 pt-2 pb-4 mx-12 my-8" Justify="Justify.Center">
 
     <MudText Class="mt-8" Typo="Typo.h4">Cadastro do Artista</MudText>
 
-    <MudForm>
+    <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
 
         <MudTextField Class="mt-4" T="string" Placeholder="Nome do Artista"
         Variant="Variant.Outlined"
@@ -65,6 +66,9 @@
 </MudPaper>
 
 @code {
+    bool success;
+    string[] errors = { };
+    MudForm form;
     private string? nome;
     private string? biografia;
     private string? fileImage;
@@ -72,10 +76,20 @@
 
     private async Task Cadastrar()
     {
-        var request = new ArtistaRequest(nome!, biografia!, fotoPerfil);
-        await artistasAPI.AddArtistaAsync(request);
-        navigationManager.NavigateTo("/Artistas");
+        try {
+            var request = new ArtistaRequest(nome!, biografia!, fotoPerfil);
+            await artistasAPI.AddArtistaAsync(request);
+            Snackbar.Add("Artista cadastrado com sucesso!", Severity.Success);
+            navigationManager.NavigateTo("/Artistas");
+        }
+        catch
+        {
+            // Logger.LogInformation("Erro ao cadastrar artista!");
+        }
     }
+
+    IList<IBrowserFile> files = new List<IBrowserFile>();
+
 
     private async Task HandleFileChange(InputFileChangeEventArgs e)
     {

@@ -11,7 +11,10 @@ public static class MusicaExtensions
 {
     public static void AddEndPointsMusicas(this WebApplication app)
     {
-        var grupo = app.MapGroup("/Musicas").RequireCors("wasm");
+        var grupo = app.MapGroup("/Musicas")
+            .RequireCors("wasm")
+            .RequireAuthorization()
+            .WithTags("Musicas");
 
         grupo.MapGet("/", ([FromServices] DAL<Musica> dal) =>
         {

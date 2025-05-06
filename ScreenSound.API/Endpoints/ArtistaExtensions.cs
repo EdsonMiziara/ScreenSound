@@ -12,7 +12,10 @@ public static class ArtistasExtensions
 {
     public static void AddEndPointsArtistas(this WebApplication app)
     {
-        var grupo = app.MapGroup("/Artistas").RequireCors("wasm");
+        var grupo = app.MapGroup("/Artistas")
+            .RequireCors("wasm")
+            .RequireAuthorization()
+            .WithTags("Artistas");
 
         grupo.MapGet("/", ([FromServices] DAL<Artista> DAL) =>
         {
@@ -23,14 +26,14 @@ public static class ArtistasExtensions
 
         grupo.MapGet("/{Nome}", ([FromServices] DAL<Artista> dal, string Nome) =>
         {
-            var artistaRequest = dal.RecuperarDTO(a => a.Nome.ToUpper() == Nome.ToUpper(), a => new ArtistaRequest(a.Nome, a.Bio, a.FotoPerfil));
-            return artistaRequest is null ? Results.NotFound() : Results.Ok(artistaRequest);
+            var artistaResponse = dal.RecuperarDTO(a => a.Nome.ToUpper() == Nome.ToUpper(), a => new ArtistaResponse(a.Id, a.Nome, a.Bio, a.FotoPerfil));
+            return artistaResponse is null ? Results.NotFound() : Results.Ok(artistaResponse);
         });
 
         grupo.MapGet("/RecuperaPor/{Id}", ([FromServices] DAL<Artista> dal, int Id) =>
         {
-            var artistaRequest = dal.RecuperarDTO(a => a.Id == Id, a => new ArtistaRequest(a.Nome, a.Bio, a.FotoPerfil));
-            return artistaRequest is null ? Results.NotFound() : Results.Ok(artistaRequest);
+            var artistaResponse = dal.RecuperarDTO(a => a.Id == Id, a => new ArtistaResponse(a.Id, a.Nome, a.Bio, a.FotoPerfil));
+            return artistaResponse is null ? Results.NotFound() : Results.Ok(artistaResponse);
         });
 
         grupo.MapPost("/", async ([FromServices] IHostEnvironment env, [FromServices] DAL<Artista> DAL, [FromBody] ArtistaRequest artistaRequest) =>

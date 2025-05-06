@@ -23,6 +23,7 @@ public class Avaliacao
     }
     public int Nota { get; set; }
     public int Id { get; set; }
+    public int PessoaId { get; set; }
 
     public static Avaliacao Parse(string texto)
     {

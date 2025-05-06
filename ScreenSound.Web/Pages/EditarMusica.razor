@@ -2,13 +2,14 @@
 @inject ArtistaAPI artistasAPI
 @inject GeneroAPI generoAPI
 @inject MusicaAPI musicaAPI
+@inject ISnackbar Snackbar
 @inject NavigationManager navigationManager
 
 <MudPaper Class="px-8 pt-2 pb-4 mx-12 my-8" Justify="Justify.Center">
 
     <MudText Class="mt-8" Typo="Typo.h4">Edição de Música</MudText>
 
-    <MudForm>
+    <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
 
         <MudTextField Class="mt-4" T="string" Placeholder="Nome da música/canção"
         @bind-Value="nome"
@@ -76,6 +77,10 @@
 </MudPaper>
 
 @code {
+    MudForm form;
+    bool success;
+    string[] errors = { };
+
     private int anoLancamento;
     private string? nome;
 
@@ -95,6 +100,11 @@
         artistas = await artistasAPI.GetArtistasAsync();
         generos = await generoAPI.GetGenerosAsync();
         Musica = await musicaAPI.GetMusicaPorNomeAsync(NomeMusica!);
+        if (artistas is null || generos is null || Musica is null)
+        {
+            Snackbar.Add("Música consultada não encontrada.", Severity.Error);
+            navigationManager.NavigateTo("/Musicas");
+        }
         anoLancamento = Musica!.anoLancamento;
         nome = Musica!.Nome;
         var artistaNome = await artistasAPI.GetArtistaPorIdAsync(Musica.ArtistaId);
@@ -120,8 +130,16 @@
 
     public async Task Deletar() //Implementação do método que deleta a música.
     {
-        await musicaAPI.DeleteMusicaAsync(Musica!.Id);
-        navigationManager.NavigateTo("/Musicas");
+        try
+        {
+            await musicaAPI.DeleteMusicaAsync(Musica!.Id);
+            Snackbar.Add("Música deletada com sucesso!", Severity.Success);
+            navigationManager.NavigateTo("/Musicas");
+        }
+        catch (Exception)
+        {
+			//Logger.LogInformation("Erro ao deletar música!");
+        }
 
     }
 
@@ -129,19 +147,21 @@
 
     private async Task Editar()
     {
-        foreach (var genero in GenerosSelecionados!)
+        try
         {
-            GenerosRequest!.Add(new GeneroRequest(genero.Nome, genero.DescricaoGenero));
-        }
-        var requestEdit = new MusicaRequestEdit(nome!, ArtistaDaMusica!.Id, anoLancamento!, GenerosRequest, Musica!.Id);
-        if (requestEdit is not null) 
-        {
+            foreach (var genero in GenerosSelecionados!)
+            {
+                GenerosRequest!.Add(new GeneroRequest(genero.Nome, genero.DescricaoGenero));
+            }
+            var requestEdit = new MusicaRequestEdit(nome!, ArtistaDaMusica!.Id, anoLancamento!, GenerosRequest, Musica!.Id);
             await musicaAPI.UpdateMusicaAsync(requestEdit);
-            navigationManager.NavigateTo("/Musicas");            
+            Snackbar.Add("Música atualizada com sucesso!", Severity.Success);
+            navigationManager.NavigateTo("/Musicas");
+
         }
-        else
+        catch (Exception)
         {
-            Console.WriteLine("Request nulo");
+			// Logger.LogInformation("Erro ao editar música!");
         }
     }
 

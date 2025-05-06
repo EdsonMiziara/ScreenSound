@@ -29,9 +29,11 @@ public class Album : IAvaliavel
         Musicas.Add(musica);
     }
 
-    public void AdicionarNota(Avaliacao nota)
+    public void AdicionarNota(int pessoaId, int nota)
     {
-        Notas.Add(nota);
+        nota = Math.Clamp(nota, 1, 5);
+
+        Notas.Add(new Avaliacao(nota) { PessoaId = pessoaId });
     }
 
     public void ExibirMusicasDoAlbum()

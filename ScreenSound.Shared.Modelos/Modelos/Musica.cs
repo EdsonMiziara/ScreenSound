@@ -55,7 +55,7 @@ public class Musica : IAvaliavel
     public void ExibirFichaTecnica()
     {
         Console.WriteLine($"Nome: {Nome}");
-        Console.WriteLine($"Artista: {Artista.Nome}");
+        Console.WriteLine($"Artista: {Artista!.Nome}");
         Console.WriteLine($"Duração: {Duracao}");
         if (Disponivel == true)
         {
@@ -67,8 +67,10 @@ public class Musica : IAvaliavel
         }
     }
 
-    public void AdicionarNota(Avaliacao nota)
+    public void AdicionarNota(int pessoaId, int nota)
     {
-        Notas.Add(nota);
+        nota = Math.Min(Math.Max(nota, 1), 5);
+
+        Notas.Add(new Avaliacao(nota) { PessoaId = pessoaId});
     }
 }

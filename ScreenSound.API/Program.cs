@@ -6,6 +6,8 @@ using ScreenSound.Modelos;
 using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using ScreenSound.Shared.Data.Modelos;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +37,13 @@ builder.Services.AddDbContext<ScreenSoundContext>((options) =>
     options.UseSqlServer(builder.Configuration["ConnectionStrings:ScreenSoundDB"])
                 .UseLazyLoadingProxies();
 });
+
+builder.Services
+    .AddIdentityApiEndpoints<PessoaComAcesso>()
+    .AddEntityFrameworkStores<ScreenSoundContext>();
+
+builder.Services.AddAuthorization();
+
 builder.Services.AddScoped<DAL<Artista>>();
 builder.Services.AddScoped<DAL<Musica>>();
 builder.Services.AddScoped<DAL<Genero>>();
@@ -43,6 +52,8 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options => options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 var app = builder.Build();
+
+
 
 app.UseHttpsRedirection();
 
@@ -57,10 +68,21 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/FotosPerfil"
 });
 
+app.UseAuthorization();
+
 
 app.AddEndPointsArtistas();
 app.AddEndPointsMusicas();
 app.AddEndpointsGenero();
+
+app.MapGroup("auth").MapIdentityApi<PessoaComAcesso>().WithTags("Autorizacao");
+
+app.MapPost("auth/logout", async ([FromServices] SignInManager<PessoaComAcesso> signInManager) =>
+{
+    await signInManager.SignOutAsync();
+    return Results.Ok();
+}).RequireAuthorization().WithTags("Autorizacao");
+
 
 app.UseSwagger();
 app.UseSwaggerUI();
