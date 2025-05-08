@@ -65,4 +65,14 @@ public class MusicaAPI
     {
         await _httpClient.PutAsJsonAsync($"Musicas/", musicaRequest);
     }
+
+    public async Task AvaliaMusicaAsync(int MusicaId, int nota)
+    {
+        await _httpClient.PostAsJsonAsync("Musicas/Avaliacao", new { MusicaId, nota });
+    }
+
+    public async Task<AvaliacaoResponse?> GetAvaliacaoArtistaAsync(int musicaId)
+    {
+        return await _httpClient.GetFromJsonAsync<AvaliacaoResponse>($"Musicas/{musicaId}/Avaliacao");
+    }
 }

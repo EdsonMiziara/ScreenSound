@@ -7,6 +7,7 @@
     </MudCardHeader>
     <MudCardContent>
         <MudText Typo="Typo.body2">@Artista!.Bio</MudText>
+        <MudRating SelectedValue="@Convert.ToInt32(Artista!.Classificacao)" ReadOnly />
     </MudCardContent>
     <MudCardActions>
         <MudButton Color="Color.Warning"
@@ -14,6 +15,7 @@
         Href=@($"/EditarArtista/{Artista!.Nome}")>Detalhes</MudButton>
     </MudCardActions>
 </MudCard>
+
 @code {
     [Parameter]
     public ArtistaResponse? Artista { get; set; }

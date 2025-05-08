@@ -13,4 +13,6 @@ public record ArtistaResponse(
     {
         return $"{Nome}";
     }
+
+    public double? Classificacao { get; set; }
 }

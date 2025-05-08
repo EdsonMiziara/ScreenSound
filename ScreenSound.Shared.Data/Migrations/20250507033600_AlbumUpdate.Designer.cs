@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ScreenSound.Banco;
 
 #nullable disable
 
-namespace ScreenSound.Shared.Data.Migrations
+namespace ScreenSound.Migrations
 {
     [DbContext(typeof(ScreenSoundContext))]
-    partial class ScreenSoundContextModelSnapshot : ModelSnapshot
+    [Migration("20250507033600_AlbumUpdate")]
+    partial class AlbumUpdate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -190,37 +193,6 @@ namespace ScreenSound.Shared.Data.Migrations
                     b.ToTable("Artistas");
                 });
 
-            modelBuilder.Entity("ScreenSound.Modelos.Avaliacao", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("AlbumId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ArtistaId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("MusicaId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Nota")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AlbumId");
-
-                    b.HasIndex("ArtistaId");
-
-                    b.HasIndex("MusicaId");
-
-                    b.ToTable("Avaliacao");
-                });
-
             modelBuilder.Entity("ScreenSound.Modelos.Genero", b =>
                 {
                     b.Property<int>("Id")
@@ -374,6 +346,40 @@ namespace ScreenSound.Shared.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("ScreenSound.Shared.Modelos.Modelos.Avaliacao", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AlbumId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ArtistaId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MusicaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Nota")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PessoaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlbumId");
+
+                    b.HasIndex("ArtistaId");
+
+                    b.HasIndex("MusicaId");
+
+                    b.ToTable("Avaliacoes");
+                });
+
             modelBuilder.Entity("GeneroMusica", b =>
                 {
                     b.HasOne("ScreenSound.Modelos.Genero", null)
@@ -449,21 +455,6 @@ namespace ScreenSound.Shared.Data.Migrations
                     b.Navigation("Artista");
                 });
 
-            modelBuilder.Entity("ScreenSound.Modelos.Avaliacao", b =>
-                {
-                    b.HasOne("ScreenSound.Modelos.Album", null)
-                        .WithMany("Notas")
-                        .HasForeignKey("AlbumId");
-
-                    b.HasOne("ScreenSound.Modelos.Artista", null)
-                        .WithMany("Notas")
-                        .HasForeignKey("ArtistaId");
-
-                    b.HasOne("ScreenSound.Modelos.Musica", null)
-                        .WithMany("Notas")
-                        .HasForeignKey("MusicaId");
-                });
-
             modelBuilder.Entity("ScreenSound.Modelos.Musica", b =>
                 {
                     b.HasOne("ScreenSound.Modelos.Album", "Album")
@@ -477,6 +468,21 @@ namespace ScreenSound.Shared.Data.Migrations
                     b.Navigation("Album");
 
                     b.Navigation("Artista");
+                });
+
+            modelBuilder.Entity("ScreenSound.Shared.Modelos.Modelos.Avaliacao", b =>
+                {
+                    b.HasOne("ScreenSound.Modelos.Album", null)
+                        .WithMany("Notas")
+                        .HasForeignKey("AlbumId");
+
+                    b.HasOne("ScreenSound.Modelos.Artista", null)
+                        .WithMany("Notas")
+                        .HasForeignKey("ArtistaId");
+
+                    b.HasOne("ScreenSound.Modelos.Musica", null)
+                        .WithMany("Notas")
+                        .HasForeignKey("MusicaId");
                 });
 
             modelBuilder.Entity("ScreenSound.Modelos.Album", b =>

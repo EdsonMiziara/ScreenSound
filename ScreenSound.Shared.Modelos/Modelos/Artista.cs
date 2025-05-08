@@ -1,6 +1,8 @@
-﻿namespace ScreenSound.Modelos;
+﻿using ScreenSound.Shared.Modelos.Modelos;
 
-public class Artista : IAvaliavel
+namespace ScreenSound.Modelos;
+
+public class Artista : IAvaliavel<Artista>
 {
     public virtual ICollection<Album> Albuns { get; set; } = new List<Album>();
     public virtual ICollection<Musica> Musicas { get; set; } = new List<Musica>();

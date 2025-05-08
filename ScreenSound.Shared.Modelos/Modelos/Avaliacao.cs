@@ -5,25 +5,18 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
-namespace ScreenSound.Modelos;
+namespace ScreenSound.Shared.Modelos.Modelos;
 
 
 public class Avaliacao
 {
     public Avaliacao(int nota)
-    {
-        if (nota <= 10 && nota >= 0)
-        {
-            Nota = nota;
-        }
-        else
-        {
-            Console.WriteLine("Nota invalida");
-        }
+    {        
+            Nota = Math.Clamp(nota, 1, 5);       
     }
     public int Nota { get; set; }
+    public int? PessoaId { get; set; }
     public int Id { get; set; }
-    public int PessoaId { get; set; }
 
     public static Avaliacao Parse(string texto)
     {

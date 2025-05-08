@@ -1,6 +1,8 @@
-﻿namespace ScreenSound.Modelos;
+﻿using ScreenSound.Shared.Modelos.Modelos;
 
-public class Musica : IAvaliavel
+namespace ScreenSound.Modelos;
+
+public class Musica : IAvaliavel<Musica>
 {
     public Musica(string nome)
     {

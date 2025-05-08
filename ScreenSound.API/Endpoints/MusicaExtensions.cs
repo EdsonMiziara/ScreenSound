@@ -4,6 +4,9 @@ using ScreenSound.API.Requests;
 using ScreenSound.API.Response;
 using ScreenSound.Banco;
 using ScreenSound.Modelos;
+using ScreenSound.Shared.Data.Modelos;
+using ScreenSound.Web.Response;
+using System.Security.Claims;
 
 namespace ScreenSound.API.Endpoints;
 
@@ -77,6 +80,72 @@ public static class MusicaExtensions
             dal.Deletar(musicaADeletar!);
             return musicaADeletar is null ? Results.NotFound() : Results.NoContent();
         });
+
+        grupo.MapPost("/Avaliacao/{MusicaId}", (HttpContext context,
+            [FromBody] AvaliacaoRequest Request,
+            [FromServices] DAL<Musica> dalMusica,
+            [FromServices] DAL<PessoaComAcesso> dalPessoa,
+            int MusicaId) =>
+        {
+            var musica = dalMusica.RecuperarPor(a => a.Id == MusicaId);
+            if (musica is null)
+            {
+                return Results.NotFound();
+            }
+
+            var email = context.User.Claims
+                .FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value
+                ?? throw new InvalidOperationException("Pessoa não está conectada");
+
+            var pessoa = dalPessoa.RecuperarPor(a => a.Email.Equals(email))
+                ?? throw new InvalidOperationException("Pessoa não encontrada");
+
+            var avaliacao = musica.Notas
+                .FirstOrDefault(a => a.PessoaId == pessoa.Id);
+
+            if (avaliacao is null)
+            {
+                musica.AdicionarNota(pessoa.Id, Request.Nota);
+            }
+            else
+            {
+                avaliacao.Nota = Request.Nota;
+            }
+
+            dalMusica.Atualizar(musica);
+
+            return Results.Created();
+        });
+
+        grupo.MapGet("{id}/avaliacao", (
+            int id,
+            HttpContext context,
+            [FromServices] DAL<Musica> dalMusica,
+            [FromServices] DAL<PessoaComAcesso> dalPessoa
+         ) =>
+            {
+                var musica = dalMusica.RecuperarPor(a => a.Id == id);
+                if (musica is null) return Results.NotFound();
+                var email = context.User.Claims
+                    .FirstOrDefault(c => c.Type.Equals(ClaimTypes.Email))?.Value
+                    ?? throw new InvalidOperationException("Não foi encontrado o email da pessoa logada");
+
+                var pessoa = dalPessoa.RecuperarPor(p => p.Email!.Equals(email))
+                    ?? throw new InvalidOperationException("Não foi encontrado o email da pessoa logada");
+
+                var avaliacao = musica
+                    .Notas
+                    .FirstOrDefault(a => a.PessoaId == pessoa.Id);
+
+                if (avaliacao is null)
+                {
+                    return Results.Ok(new AvaliacaoResponse(id, pessoa.Id, 0));
+                }
+                else
+                {
+                    return Results.Ok(new AvaliacaoResponse(id, pessoa.Id, avaliacao.Nota));
+                }
+            });
     }
 
 
@@ -111,7 +180,14 @@ public static class MusicaExtensions
     }
 
 
-
+    private static ICollection<GeneroResponse> EntityListToResponseListGenero(IEnumerable<Genero> generolist)
+    {
+        return generolist.Select(a => EntityToResponseGenero(a)).ToList();
+    }
+    private static GeneroResponse EntityToResponseGenero(Genero genero)
+    {
+        return new GeneroResponse( genero.Nome!, genero.Descricao, genero.Id);
+    }
     private static Genero RequestToEntity(GeneroRequest genero)
     {
         return new Genero()
@@ -128,6 +204,10 @@ public static class MusicaExtensions
 
     private static MusicaResponse EntityToResponse(Musica musica)
     {
-        return new MusicaResponse(musica.Id, musica.Nome!, musica.Artista!.Id, musica.Artista.Nome);
+        var generos =  musica.Generos is not null ? EntityListToResponseListGenero(musica.Generos) : new List<GeneroResponse>();
+        return new MusicaResponse(musica.Id, musica.Nome, musica.Artista.Id, musica.Artista.Nome, generos) 
+        {
+            Classificacao = musica.Notas.Select(a => a.Nota).DefaultIfEmpty(0).Average()
+        };
     }
 }

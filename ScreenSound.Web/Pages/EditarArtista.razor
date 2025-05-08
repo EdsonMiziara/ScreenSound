@@ -27,24 +27,32 @@
             RequiredError="Campo obrigatório." />
 
             <div class="d-flex align-center justify-space-between mt-4">
-                <MudButton Variant="Variant.Filled"
-                Color="Color.Primary"
-                Class="ml-auto"
-                @onclick="Editar">
-                    Salvar
-                </MudButton>
-                <MudButton Variant="Variant.Filled"
-                @onclick="Deletar"
-                Color="Color.Secondary"
-                Class="ml-3">
-                    Deletar
-                </MudButton>
-                <MudButton Variant="Variant.Filled"
-                Color="Color.Info"
-                Class="ml-3"
-                @onclick="VoltarParaListagem">
-                    Voltar
-                </MudButton>
+
+
+                <MudRating @bind-SelectedValue="Classificacao"
+                @onclick="AvaliarArtista" />
+
+                <div>
+                    <MudButton Variant="Variant.Filled"
+                    Color="Color.Primary"
+                    Disabled="@(!success)"
+                    Class="ml-auto"
+                    @onclick="Editar">
+                        Salvar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                    Color="Color.Warning"
+                    Class="ml-3"
+                    @onclick="Deletar">
+                        Excluir
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                    Color="Color.Info"
+                    Class="ml-3"
+                    @onclick="VoltarParaListagem">
+                        Voltar
+                    </MudButton>
+                </div>
             </div>
 
         </MudForm>
@@ -64,9 +72,10 @@ else
     [Parameter]
     public string? NomeArtista { get; set; }
     private string? fotoPerfil;
-    private int id;
-
+    private int nota;
+    private int Classificacao;
     public ArtistaResponse? Artista { get; set; }
+    private int id;
 
     protected override async Task OnInitializedAsync()
     {
@@ -78,6 +87,7 @@ else
         }
         nome = Artista!.Nome;
         biografia = Artista!.Bio;
+        id = Artista!.Id;
     }
     protected async override Task OnParametersSetAsync()
     {
@@ -116,4 +126,17 @@ else
     {
         navigationManager.NavigateTo("/Artistas");
     }
+
+	private async Task AvaliarArtista()
+	{
+		try
+		{
+			await artistasAPI.AvaliaArtistaAsync(id, Classificacao);
+			Snackbar.Add("Avaliação enviada com sucesso!", Severity.Success);
+		}
+		catch
+		{
+			// Logger.LogInformation("Erro ao cadastrar artista!");
+		}
+	}
 }

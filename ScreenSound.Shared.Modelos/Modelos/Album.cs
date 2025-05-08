@@ -1,11 +1,13 @@
-﻿using System.Security.Principal;
+﻿using ScreenSound.Shared.Modelos.Modelos;
+using System.Security.Principal;
 
 namespace ScreenSound.Modelos;
-public class Album : IAvaliavel
+public class Album : IAvaliavel<Album>
 {
     public virtual ICollection<Musica> Musicas { get; set; } = new List<Musica>();
     public virtual ICollection<Avaliacao> Notas { get; set; } = new List<Avaliacao>();
     public virtual Artista? Artista { get; set; }
+    public int? ArtistaId { get; set; }
     public Album(string nome)
     {
         Nome = nome;

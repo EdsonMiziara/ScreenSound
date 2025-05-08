@@ -11,11 +11,11 @@ using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.ConfigureAppConfiguration((config) =>
-{
-    var settings = config.Build();
-    config.AddAzureAppConfiguration("Endpoint=https://screensound-configuration-edson.azconfig.io;Id=qECB;Secret=2wlvdCocXwxV7KacnFkF78uEmbM7vFHmE63jvOQVNkfMEVit6TJuJQQJ99BDACZoyfim4I5JAAACAZAC369A");
-});
+//builder.Host.ConfigureAppConfiguration((config) =>
+//{
+//    var settings = config.Build();
+//    config.AddAzureAppConfiguration("Endpoint=https://screensound-configuration-edson.azconfig.io;Id=qECB;Secret=2wlvdCocXwxV7KacnFkF78uEmbM7vFHmE63jvOQVNkfMEVit6TJuJQQJ99BDACZoyfim4I5JAAACAZAC369A");
+//});
 
 
 builder.Services.AddCors(options =>
@@ -47,6 +47,8 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<DAL<Artista>>();
 builder.Services.AddScoped<DAL<Musica>>();
 builder.Services.AddScoped<DAL<Genero>>();
+builder.Services.AddScoped<DAL<Album>>();
+builder.Services.AddScoped<DAL<PessoaComAcesso>>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -74,6 +76,7 @@ app.UseAuthorization();
 app.AddEndPointsArtistas();
 app.AddEndPointsMusicas();
 app.AddEndpointsGenero();
+app.AddEndpointsAlbuns();
 
 app.MapGroup("auth").MapIdentityApi<PessoaComAcesso>().WithTags("Autorizacao");
 

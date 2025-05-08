@@ -14,7 +14,7 @@ Dictionary<int, Menu> opcoes = new();
 opcoes.Add(1, new MenuRegistrarArtista());
 opcoes.Add(2, new MenuRegistrarMusica());
 opcoes.Add(3, new MenuRegistrarAlbum());
-opcoes.Add(4, new MenuAvaliaAlbum());
+//opcoes.Add(4, new MenuAvaliaAlbum());
 opcoes.Add(5, new MenuExibirDetalhes());
 opcoes.Add(6, new MenuMostrarArtistas());
 //opcoes.Add(7, new MenuMostrarMusicasPorAno());

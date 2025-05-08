@@ -1,22 +1,23 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace ScreenSound.Shared.Data.Migrations
+namespace ScreenSound.Migrations
 {
     /// <inheritdoc />
-    public partial class teste : Migration
+    public partial class atualizarAlbum : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-
+            
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-
+            
         }
     }
 }
