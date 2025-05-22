@@ -1,8 +1,9 @@
-﻿using ScreenSound.Shared.Modelos.Modelos;
+﻿using ScreenSound.Shared.Modelos.Avaliacao;
+using ScreenSound.Shared.Modelos.Validacao;
 using System.Security.Principal;
 
 namespace ScreenSound.Modelos;
-public class Album : IAvaliavel<Album>
+public class Album : Valida, IAvaliavel<Album>
 {
     public virtual ICollection<Musica> Musicas { get; set; } = new List<Musica>();
     public virtual ICollection<Avaliacao> Notas { get; set; } = new List<Avaliacao>();
@@ -11,6 +12,7 @@ public class Album : IAvaliavel<Album>
     public Album(string nome)
     {
         Nome = nome;
+        Validar();
     }
 
     public string Nome { get; set; }
@@ -46,5 +48,12 @@ public class Album : IAvaliavel<Album>
             Console.WriteLine($"Música: {musica.Nome}");
         }
         Console.WriteLine($"\nPara ouvir este álbum inteiro você precisa de {DuracaoTotal}");
+    }
+    protected override void Validar()
+    {
+        if (Nome is null || Nome == "")
+        {
+            Erros.RegistrarErro("Nome do álbum não pode ser nulo ou vazio.");
+        }
     }
 }

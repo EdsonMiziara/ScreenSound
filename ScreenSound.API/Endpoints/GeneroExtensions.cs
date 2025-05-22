@@ -32,6 +32,10 @@ public static class GeneroExtensions
         grupo.MapPost("/", ([FromServices] DAL<Genero> dal, [FromBody] GeneroRequest generoRequest) =>
         {
             var genero = new Genero(generoRequest.Nome, generoRequest.DescricaoGenero!);
+            if (!genero.EhValido)
+            {
+                return Results.BadRequest(genero.Erros.Sumario);
+            }
             dal.Adicionar(genero);
             return Results.Ok(genero);
         });
@@ -43,6 +47,10 @@ public static class GeneroExtensions
 
             genero.Nome = generoRequestEdit.NomeEdit;
             genero.Descricao = generoRequestEdit.DescricaoEdit;
+            if (!genero.EhValido)
+            {
+                return Results.BadRequest(genero.Erros.Sumario);
+            }
             dal.Atualizar(genero);
             return Results.NoContent();
         });

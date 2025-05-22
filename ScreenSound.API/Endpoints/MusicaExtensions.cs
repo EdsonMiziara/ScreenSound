@@ -42,7 +42,10 @@ public static class MusicaExtensions
                     ? GeneroRequestConverter(musicaRequest.Generos, dalGenero)
                     : new List<Genero>()
             };
-
+            if (!musica.EhValido)
+            {
+                return Results.BadRequest(musica.Erros.Sumario);
+            }
             dal.Adicionar(musica);
             return Results.Ok();
         });
@@ -68,6 +71,10 @@ public static class MusicaExtensions
                 {
                     musicaAAtualizar.Generos.Add(genero);
                 }
+            }
+            if (!musicaAAtualizar.EhValido)
+            {
+                return Results.BadRequest(musicaAAtualizar.Erros.Sumario);
             }
 
             dal.Atualizar(musicaAAtualizar);

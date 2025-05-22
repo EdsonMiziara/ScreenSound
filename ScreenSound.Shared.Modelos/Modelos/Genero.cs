@@ -1,4 +1,5 @@
 ﻿using ScreenSound.Modelos;
+using ScreenSound.Shared.Modelos.Validacao;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,12 +8,13 @@ using System.Threading.Tasks;
 
 namespace ScreenSound.Modelos;
 
-public class Genero
+public class Genero : Valida
 {
     public Genero(string nome, string descricao)
     {
         Nome = nome;
         Descricao = descricao;
+        Validar();
     }
     public Genero() { }
 
@@ -24,5 +26,12 @@ public class Genero
     public override string ToString()
     {
         return $"Nome: {Nome} - Descrição: {Descricao}";
+    }
+    protected override void Validar()
+    {
+        if (Nome is null || Nome == "")
+        {
+            Erros.RegistrarErro("O nome do gênero não pode ser nulo ou vazio.");
+        }
     }
 }

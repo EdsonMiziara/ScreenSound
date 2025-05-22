@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
-namespace ScreenSound.Shared.Modelos.Modelos;
+namespace ScreenSound.Shared.Modelos.Avaliacao;
 
 
 public class Avaliacao

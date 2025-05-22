@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
 using ScreenSound.Modelos;
 using ScreenSound.Shared.Data.Modelos;
-using ScreenSound.Shared.Modelos.Modelos;
+using ScreenSound.Shared.Modelos.Avaliacao;
 using System;
 using System.Collections.Generic;
 using System.Linq;

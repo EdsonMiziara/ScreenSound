@@ -1,8 +1,9 @@
-﻿using ScreenSound.Shared.Modelos.Modelos;
+﻿using ScreenSound.Shared.Modelos.Avaliacao;
+using ScreenSound.Shared.Modelos.Validacao;
 
 namespace ScreenSound.Modelos;
 
-public class Artista : IAvaliavel<Artista>
+public class Artista : Valida, IAvaliavel<Artista>
 {
     public virtual ICollection<Album> Albuns { get; set; } = new List<Album>();
     public virtual ICollection<Musica> Musicas { get; set; } = new List<Musica>();
@@ -14,6 +15,7 @@ public class Artista : IAvaliavel<Artista>
         Nome = nome;
         Bio = bio;
         FotoPerfil = "https://cdn.pixabay.com/photo/2016/08/08/09/17/avatar-1577909_1280.png";
+        Validar();
     }
     public double Media
     {
@@ -30,7 +32,14 @@ public class Artista : IAvaliavel<Artista>
 
     public void AdicionarAlbum(Album album)
     {
-        Albuns.Add(album);
+        if (album.EhValido) 
+        {            
+            Albuns.Add(album);
+        }
+        else
+        {
+            Console.WriteLine(album.Erros.Sumario); 
+        }
     }
 
     public void AdicionarNota(int pessoaId, int nota)
@@ -55,6 +64,17 @@ public class Artista : IAvaliavel<Artista>
     public override string ToString()
     {
         return $"Id: {Id}\nNome da banda: {Nome}\nBio da Banda: {Bio}";
+    }
+    protected override void Validar()
+    {
+        if (Nome is null || Nome == "")
+        {
+            Erros.RegistrarErro("Nome não pode ser nulo ou vazio");
+        }
+        else if (Bio is null )
+        {
+            Erros.RegistrarErro("Bio não pode ser nulo");
+        }
     }
 
 }

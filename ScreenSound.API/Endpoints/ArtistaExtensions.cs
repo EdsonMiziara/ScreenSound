@@ -6,7 +6,7 @@ using ScreenSound.API.Response;
 using ScreenSound.Banco;
 using ScreenSound.Modelos;
 using ScreenSound.Shared.Data.Modelos;
-using ScreenSound.Shared.Modelos.Modelos;
+using ScreenSound.Shared.Modelos.Avaliacao;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
 namespace ScreenSound.API.Endpoints;
@@ -55,11 +55,20 @@ public static class ArtistasExtensions
                 {
                     FotoPerfil = $"/FotoPerfil/{imagemArtista}"
                 };
+                if (!artista.EhValido)
+                {
+                    return Results.BadRequest(artista.Erros.Sumario);
+                }
                 DAL.Adicionar(artista);
             }
             else
             {
                 var artista = new Artista(artistaRequest.nome, artistaRequest.bio);
+                if (!artista.EhValido)
+                {
+                    return Results.BadRequest(artista.Erros.Sumario);
+
+                }
                 DAL.Adicionar(artista);
             }
             return Results.Ok();
@@ -80,8 +89,12 @@ public static class ArtistasExtensions
 
             artistaAAtualizar.Nome = artistaRequestEdit.nome;
             artistaAAtualizar.Bio = artistaRequestEdit.bio;
-            dal.Atualizar(artistaAAtualizar);
+            if (!artistaAAtualizar.EhValido)
+            {
+                return Results.BadRequest(artistaAAtualizar.Erros.Sumario);
+            }
 
+            dal.Atualizar(artistaAAtualizar);
             return Results.Ok();
         });
 
@@ -115,9 +128,7 @@ public static class ArtistasExtensions
             {
                 avaliacao.Nota = Request.Nota;
             }
-
             dalArtista.Atualizar(artista);
-
             return Results.Created();
         });
         grupo.MapGet("{id}/Avaliacao", (

@@ -1,12 +1,14 @@
-﻿using ScreenSound.Shared.Modelos.Modelos;
+﻿using ScreenSound.Shared.Modelos.Avaliacao;
+using ScreenSound.Shared.Modelos.Validacao;
 
 namespace ScreenSound.Modelos;
 
-public class Musica : IAvaliavel<Musica>
+public class Musica : Valida, IAvaliavel<Musica>
 {
     public Musica(string nome)
     {
         Nome = nome;
+        Validar();
     }
 
     public string Nome { get; set; }
@@ -30,11 +32,13 @@ public class Musica : IAvaliavel<Musica>
     {
         Artista = artista;
         Nome = nome;
+        Validar();
     }
     public Musica(int? artistaId, string nome)
     {
         ArtistaId = artistaId;
         Nome = nome;
+        Validar();
     }
 
     public Musica(string nome, int anolancamento, int? artistaId, List<Genero> generos )
@@ -43,6 +47,7 @@ public class Musica : IAvaliavel<Musica>
         AnoLancamento = anolancamento;
         ArtistaId = artistaId;
         Generos = generos;
+        Validar();
     }
     public bool? Disponivel { get; set; }
 
@@ -74,5 +79,17 @@ public class Musica : IAvaliavel<Musica>
         nota = Math.Min(Math.Max(nota, 1), 5);
 
         Notas.Add(new Avaliacao(nota) { PessoaId = pessoaId});
+    }
+
+    protected override void Validar()
+    {
+        if (Nome is null || Nome == "")
+        {
+            Erros.RegistrarErro("Nome não pode ser nulo ou vazio");
+        }
+        else if (Artista is not null && !Artista.EhValido)
+        {
+            Erros.RegistrarErro("Artista adicionado não pode ser invalido");
+        }
     }
 }
