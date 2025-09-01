@@ -11,13 +11,6 @@ using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//builder.Host.ConfigureAppConfiguration((config) =>
-//{
-//    var settings = config.Build();
-//    config.AddAzureAppConfiguration("Endpoint=https://screensound-configuration-edson.azconfig.io;Id=qECB;Secret=2wlvdCocXwxV7KacnFkF78uEmbM7vFHmE63jvOQVNkfMEVit6TJuJQQJ99BDACZoyfim4I5JAAACAZAC369A");
-//});
-
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("wasm", policy =>
@@ -28,7 +21,7 @@ builder.Services.AddCors(options =>
         )
         .AllowAnyHeader()
         .AllowAnyMethod()
-        .AllowCredentials(); // sÛ permitido se WithOrigins tiver domÌnios explÌcitos
+        .AllowCredentials(); // s√≥ permitido se WithOrigins tiver dom√≠nios expl√≠citos
     });
 });
 
@@ -59,7 +52,7 @@ var app = builder.Build();
 
 app.UseHttpsRedirection();
 
-app.UseRouting(); // Certifique-se de que UseRouting est· aqui
+app.UseRouting(); // Certifique-se de que UseRouting est√° aqui
 
 // Use o middleware do CORS
 app.UseCors("wasm");
@@ -92,8 +85,8 @@ app.UseSwaggerUI();
 
 app.UseEndpoints(endpoints =>
 {
-    // VocÍ pode adicionar endpoints adicionais aqui, se necess·rio.
-    // Para Minimal APIs definidas com MapGroup, isso geralmente n„o È necess·rio.
+    // Voc√™ pode adicionar endpoints adicionais aqui, se necess√°rio.
+    // Para Minimal APIs definidas com MapGroup, isso geralmente n√£o √© necess√°rio.
 });
 
 app.Run();
