@@ -60,6 +60,7 @@ public static class ArtistasExtensions
                     return Results.BadRequest(artista.Erros.Sumario);
                 }
                 DAL.Adicionar(artista);
+                return Results.Created();
             }
             else
             {
@@ -70,14 +71,23 @@ public static class ArtistasExtensions
 
                 }
                 DAL.Adicionar(artista);
+                return Results.Created();
             }
-            return Results.Ok();
         });
 
         grupo.MapDelete("/{Id}", ([FromServices] DAL<Artista> DAL, int Id) =>
         {
             var artista = DAL.RecuperarPor(a => a.Id == Id);
             if (artista is null) return Results.NotFound();
+            if (artista.FotoPerfil != null && artista.FotoPerfil != "https://cdn.pixabay.com/photo/2016/08/08/09/17/avatar-1577909_1280.png")
+            {
+                var nomeFoto = artista.FotoPerfil.Split('/').Last();
+                var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "FotosPerfil", nomeFoto);
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
             DAL.Deletar(artista);
             return Results.NoContent();
         });
