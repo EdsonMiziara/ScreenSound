@@ -1,6 +1,6 @@
-# 🚀 Backend Learning Project – Web API + SQL Integration
+# 🚀 Backend Learning Project – Web API + SQL Server Integration
 
-This repository is a personal and evolving project focused on backend development, with an emphasis on building and integrating Web APIs with relational databases (SQL).
+This repository is a personal and evolving project focused on backend development, with an emphasis on building and integrating Web APIs with relational databases (SQL Server).
 
 ---
 
@@ -25,7 +25,7 @@ The main goal of this project is to serve as a practical sandbox where I apply, 
 
 - **Language:** C#
 - **Framework:** ASP .NET CORE
-- **Database:** MySQL
+- **Database:** SQL Server
 - **Tools:** Postman
 
 ---
