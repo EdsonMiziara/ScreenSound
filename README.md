@@ -30,9 +30,20 @@ The main goal of this project is to serve as a practical sandbox where I apply, 
 
 ---
 
+## 🚀 Live Demo (Azure)
+
+A version of this project is hosted on Azure. You can access and test it using the credentials below:
+
+* **Link:** [screensound-web-edson-fwcma8bdb4a8h0c7.brazilsouth-01.azurewebsites.net](https://screensound-web-edson-fwcma8bdb4a8h0c7.brazilsouth-01.azurewebsites.net)
+* **Test Account:**
+    * **Email:** `edson@email.com`
+    * **Password:** `Senh@123`
+
+---
+
 ## 📈 Project Status
 
-> 🚧 **Actively under development**  
+> 🚧 **Actively under development**  
 This is a living project — I frequently add new functionality as a way to strengthen my backend development skills.
 
 ---
@@ -45,9 +56,4 @@ I believe in learning by doing. This project is my main playground for experimen
 
 ## 🤝 Feedback & Contributions
 
-Feel free to open issues or suggest improvements!  
-Constructive feedback is always welcome and greatly appreciated — especially if it helps me grow and evolve as a backend developer.
-
----
-
-**Let’s do it! 💻🔥**
+Feel free to open
