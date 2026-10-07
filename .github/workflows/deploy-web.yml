@@ -1,0 +1,38 @@
+name: Deploy Web Blazor no Azure
+
+on:
+  push:
+    branches: [ "master" ]
+    paths:
+      - 'ScreenSound.Web/**'
+      - 'ScreenSound.Shared.Modelos/**'
+      - '.github/workflows/deploy-web.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+
+    - name: Configurar ambiente .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x' 
+
+    - name: Restaurar dependências
+      run: dotnet restore ScreenSound.Web/ScreenSound.Web.csproj
+
+    - name: Compilar (Build)
+      run: dotnet build ScreenSound.Web/ScreenSound.Web.csproj -c Release --no-restore
+
+    - name: Publicar aplicação
+      run: dotnet publish ScreenSound.Web/ScreenSound.Web.csproj -c Release -o ./publish-web
+
+    - name: Deploy para o Azure App Service
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: 'ScreenSound-Web-Edson'
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_WEB }}
+        package: ./publish-web
