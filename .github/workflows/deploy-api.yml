@@ -1,0 +1,39 @@
+name: Deploy API no Azure
+
+on:
+  push:
+    branches: [ "master" ]
+    paths:
+      - 'ScreenSound.API/**'
+      - 'ScreenSound.Shared.Data/**'
+      - 'ScreenSound.Shared.Modelos/**'
+      - '.github/workflows/deploy-api.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+
+    - name: Configurar ambiente .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restaurar dependências
+      run: dotnet restore ScreenSound.API/ScreenSound.API.csproj
+
+    - name: Compilar (Build)
+      run: dotnet build ScreenSound.API/ScreenSound.API.csproj -c Release --no-restore
+
+    - name: Publicar aplicação
+      run: dotnet publish ScreenSound.API/ScreenSound.API.csproj -c Release -o ./publish-api
+
+    - name: Deploy para o Azure App Service
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: 'ScreenSound-API-Edson'
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_API }}
+        package: ./publish-api
