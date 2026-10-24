@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ScreenSound.Teste.Integracao": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

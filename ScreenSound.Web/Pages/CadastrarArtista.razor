@@ -100,6 +100,7 @@
         using var stream = resizedImage.OpenReadStream(maxAllowedSize: 1024 * 1024);
         using var ms = new MemoryStream();
         await stream.CopyToAsync(ms);
+        ms.Position = 0;
 
         var imageUpload = Convert.ToBase64String(ms.ToArray());
         fileImage = $"data:{format};base64,{imageUpload}";

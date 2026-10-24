@@ -1,0 +1,6 @@
+services:
+  screensound.api:
+    image: ${DOCKER_REGISTRY-}screensoundapi
+    build:
+      context: .
+      dockerfile: ScreenSound.API/Dockerfile

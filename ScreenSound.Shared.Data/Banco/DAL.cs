@@ -1,13 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿// ScreenSound.Banco/DAL.cs
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ScreenSound.Banco;
 
+/// <summary>
+/// Repositório Genérico (DAL) assíncrono que implementa o padrão Unit of Work.
+/// (Não chama SaveChanges).
+/// </summary>
+/// <typeparam name="T">A entidade</typeparam>
 public class DAL<T> where T : class
 {
     protected readonly ScreenSoundContext context;
@@ -17,59 +18,86 @@ public class DAL<T> where T : class
         this.context = context;
     }
 
-    public IEnumerable<T> Listar()
-    {
-        return context.Set<T>().ToList();
-    }
-    public void Adicionar(T objeto)
-    {
+    // --- Métodos de Leitura (Query) ---
 
-        context.Set<T>().Add(objeto);
-        context.SaveChanges();
+    /// <summary>
+    /// Retorna um IQueryable<T> (AsNoTracking) para projeções (ex: AutoMapper.ProjectTo).
+    /// </summary>
+    public IQueryable<T> ListarComoQueryable()
+    {
+        return context.Set<T>().AsNoTracking();
+    }
 
-    }
-    public void Atualizar(T objeto)
+    /// <summary>
+    /// Recupera uma entidade (somente leitura - AsNoTracking) de forma assíncrona.
+    /// </summary>
+    public async Task<T?> RecuperarPorAsync(Expression<Func<T, bool>> condicao)
     {
-        context.Set<T>().Update(objeto);
-        context.SaveChanges();
+        return await context.Set<T>().AsNoTracking().FirstOrDefaultAsync(condicao);
     }
-    public void Deletar(T objeto)
-    {
-        context.Set<T>().Remove(objeto);
-        context.SaveChanges();
 
-    }
-    public void Attach(T entity)
+    /// <summary>
+    /// Recupera uma entidade (rastreada - para edição) de forma assíncrona.
+    /// </summary>
+    public async Task<T?> RecuperarParaEdicaoAsync(Expression<Func<T, bool>> condicao)
     {
-        context.Set<T>().Attach(entity);  
+        return await context.Set<T>().FirstOrDefaultAsync(condicao);
     }
-    public T? RecuperarPor(Expression<Func<T, bool>> condição)
-    {
-        return context.Set<T>().AsNoTracking().FirstOrDefault(condição);
-    }
-    public T? RecuperarComInclude(Expression<Func<T, bool>> filtro, params Expression<Func<T, object>>[] includes)
+
+    /// <summary>
+    /// Recupera uma entidade (rastreada) com Includes, para atualização.
+    /// </summary>
+    public async Task<T?> RecuperarComIncludeAsync(
+        Expression<Func<T, bool>> filtro,
+        params Expression<Func<T, object>>[] includes)
     {
         IQueryable<T> query = context.Set<T>();
 
+        // Aplica os Includes
         foreach (var include in includes)
         {
             query = query.Include(include);
         }
 
-        return query.FirstOrDefault(filtro);
-    }
-    public IEnumerable<T> ListarPor(Expression<Func<T, bool>> condicao)
-    {
-        return context.Set<T>().Where(condicao);
-    }
-    public TResult? RecuperarDTO<TResult>(Expression<Func<T, bool>> condicao, Expression<Func<T, TResult>> seletor)
-    {
-        return context.Set<T>().AsNoTracking().Where(condicao).Select(seletor).FirstOrDefault();
+        // Retorna a entidade rastreada
+        return await query.FirstOrDefaultAsync(filtro);
     }
 
-    public IEnumerable<TResult> ListarDTO<TResult>(Expression<Func<T, bool>> condicao, Expression<Func<T, TResult>> seletor)
+    /// <summary>
+    /// Recupera um DTO projetado (AsNoTracking) de forma assíncrona.
+    /// </summary>
+    public async Task<TResult?> RecuperarDTOAsync<TResult>(
+        Expression<Func<T, bool>> condicao,
+        Expression<Func<T, TResult>> seletor)
     {
-        return context.Set<T>().AsNoTracking().Where(condicao).Select(seletor).ToList();
+        return await context.Set<T>()
+            .AsNoTracking()
+            .Where(condicao)
+            .Select(seletor)
+            .FirstOrDefaultAsync();
     }
 
+    /// <summary>
+    /// Adiciona um objeto ao DbContext.
+    /// </summary>
+    public void Adicionar(T objeto)
+    {
+        context.Set<T>().Add(objeto);
+    }
+
+    /// <summary>
+    /// Atualiza um objeto no DbContext.
+    /// </summary>
+    public void Atualizar(T objeto)
+    {
+        context.Set<T>().Update(objeto);
+    }
+
+    /// <summary>
+    /// Remove um objeto do DbContext.
+    /// </summary>
+    public void Deletar(T objeto)
+    {
+        context.Set<T>().Remove(objeto);
+    }
 }

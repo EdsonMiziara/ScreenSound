@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿// ScreenSound.API.Endpoints/AlbumExtensions.cs
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore; // Necessário para .ToListAsync() e .Include()
 using ScreenSound.API.Request;
 using ScreenSound.API.Requests;
 using ScreenSound.API.Response;
 using ScreenSound.Banco;
 using ScreenSound.Modelos;
+using ScreenSound.Shared.Data.Banco; // Necessário para IUnitOfWork
 using ScreenSound.Shared.Data.Modelos;
 using System.Security.Claims;
 
@@ -19,44 +22,67 @@ public static class AlbumExtensions
             .RequireAuthorization()
             .WithTags("Albuns");
 
-        grupo.MapGet("/", ([FromServices] DAL<Album> dal) =>
+        grupo.MapGet("/", async ([FromServices] DAL<Album> dal) =>
         {
-            var lista = dal.Listar();
-            var resposta = EntityListToResponseList(lista);
+            var lista = await dal.ListarComoQueryable()
+                .Include(a => a.Artista)
+                .Include(a => a.Notas)
+                .Include(a => a.Musicas)
+                .ToListAsync();
 
+            var resposta = EntityListToResponseList(lista);
             return Results.Ok(resposta);
         });
 
-        grupo.MapGet("/{Id}", (int Id, [FromServices] DAL<Album> dal) =>
+        grupo.MapGet("/{Id}", async (int Id, [FromServices] DAL<Album> dal) =>
         {
-            var album = dal.RecuperarPor(a => a.Id == Id);
+            var album = await dal.RecuperarComIncludeAsync(
+                a => a.Id == Id,
+                a => a.Artista!, a => a.Notas, a => a.Musicas);
 
             return album is null ? Results.NotFound() : Results.Ok(EntityToResponse(album));
         });
 
-        grupo.MapGet("/{Nome}", (string Nome, [FromServices] DAL<Album> dal) =>
+        grupo.MapGet("/{Nome}", async (string Nome, [FromServices] DAL<Album> dal) =>
         {
-            var album = dal.RecuperarPor(a => a.Nome.ToUpper().Equals(Nome.ToUpper()));
+            var album = await dal.RecuperarComIncludeAsync(
+                a => a.Nome.ToUpper().Equals(Nome.ToUpper()),
+                a => a.Artista!, a => a.Notas, a => a.Musicas);
 
             return album is null ? Results.NotFound() : Results.Ok(EntityToResponse(album));
         });
 
-        grupo.MapPost("/", ([FromServices] DAL<Album> dal, [FromBody] AlbumRequest albumRequest, [FromServices] DAL<Artista> artistaDAL, [FromServices] DAL<Genero> generoDAL, [FromServices] DAL<Musica> musicaDAL) =>
+        grupo.MapPost("/", async (
+            [FromServices] IUnitOfWork uow,
+            [FromServices] DAL<Album> dal,
+            [FromBody] AlbumRequest albumRequest,
+            [FromServices] DAL<Artista> artistaDAL,
+            [FromServices] DAL<Genero> generoDAL,
+            [FromServices] DAL<Musica> musicaDAL) =>
         {
             var album = new Album(albumRequest.Nome)
             {
                 ArtistaId = albumRequest.ArtistaId,
-                Artista = artistaDAL.RecuperarPor(a => a.Id == albumRequest.ArtistaId),
-                Musicas = albumRequest.Musicas is not null ? MusicaRequestConverter(albumRequest.Musicas!, musicaDAL, generoDAL) : new List<Musica>()
+                Artista = await artistaDAL.RecuperarPorAsync(a => a.Id == albumRequest.ArtistaId),
+                Musicas = albumRequest.Musicas is not null
+                    ? await MusicaRequestConverter(albumRequest.Musicas!, musicaDAL, generoDAL)
+                    : new List<Musica>()
             };
 
             dal.Adicionar(album);
-            return Results.Ok();
+            await uow.CommitAsync(); 
+
+            return Results.Created();
         });
 
-        grupo.MapPut("/", ([FromServices] DAL<Album> dal, [FromServices] DAL<Artista> artistaDAL, [FromBody] AlbumRequestEdit albumRequestEdit) =>
+        grupo.MapPut("/", async (
+            [FromServices] IUnitOfWork uow,
+            [FromServices] DAL<Album> dal,
+            [FromServices] DAL<Artista> artistaDAL,
+            [FromBody] AlbumRequestEdit albumRequestEdit) =>
         {
-            var albumAAtualizar = dal.RecuperarComInclude(a => a.Id == albumRequestEdit.Id, a => ((Album)(object)a).Musicas);
+            var albumAAtualizar = await dal.RecuperarComIncludeAsync(
+                a => a.Id == albumRequestEdit.Id, a => a.Musicas);
 
             if (albumAAtualizar is null)
             {
@@ -66,28 +92,38 @@ public static class AlbumExtensions
             albumAAtualizar.Nome = albumRequestEdit.Nome;
             albumAAtualizar.ArtistaId = albumRequestEdit.ArtistaId;
             albumAAtualizar.Musicas = albumRequestEdit.Musicas;
-            albumAAtualizar.Artista = artistaDAL.RecuperarPor(a => a.Id == albumRequestEdit.ArtistaId);
+            albumAAtualizar.Artista = await artistaDAL.RecuperarPorAsync(a => a.Id == albumRequestEdit.ArtistaId);
 
-            dal.Atualizar(albumAAtualizar);
+            await uow.CommitAsync(); 
+
             return Results.Ok();
         });
 
-        grupo.MapDelete("/{Id}", ([FromServices] DAL<Album> dal, int Id) =>
+        grupo.MapDelete("/{Id}", async (
+            [FromServices] IUnitOfWork uow,
+            [FromServices] DAL<Album> dal,
+            int Id) =>
         {
-            var albumADeletar = dal.RecuperarPor(a => a.Id == Id);
-            dal.Deletar(albumADeletar!);
+            var albumADeletar = await dal.RecuperarPorAsync(a => a.Id == Id);
+            if (albumADeletar is null) return Results.NotFound();
 
-            return albumADeletar is null ? Results.NotFound() : Results.NoContent();
+            dal.Deletar(albumADeletar);
+            await uow.CommitAsync(); 
 
+            return Results.NoContent();
         });
 
-        grupo.MapPost("/Avaliacao/{AlbumId}", (HttpContext context,
+        grupo.MapPost("/Avaliacao/{AlbumId}", async (
+            HttpContext context,
+            [FromServices] IUnitOfWork uow,
             [FromBody] AvaliacaoRequest Request,
             [FromServices] DAL<Album> dalAlbum,
             [FromServices] DAL<PessoaComAcesso> dalPessoa,
             int AlbumId) =>
         {
-            var album = dalAlbum.RecuperarPor(a => a.Id == AlbumId);
+            var album = await dalAlbum.RecuperarComIncludeAsync(
+                a => a.Id == AlbumId, a => a.Notas);
+
             if (album is null)
             {
                 return Results.NotFound();
@@ -97,7 +133,7 @@ public static class AlbumExtensions
                 .FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value
                 ?? throw new InvalidOperationException("Pessoa não está conectada");
 
-            var pessoa = dalPessoa.RecuperarPor(a => a.Email!.Equals(email))
+            var pessoa = await dalPessoa.RecuperarPorAsync(a => a.Email!.Equals(email))
                 ?? throw new InvalidOperationException("Pessoa não encontrada");
 
             var avaliacao = album.Notas
@@ -112,25 +148,26 @@ public static class AlbumExtensions
                 avaliacao.Nota = Request.Nota;
             }
 
-            dalAlbum.Atualizar(album);
+            await uow.CommitAsync();
 
             return Results.Created();
         });
 
-        grupo.MapGet("{id}/avaliacao", (
+        grupo.MapGet("{id}/avaliacao", async (
             int id,
             HttpContext context,
             [FromServices] DAL<Album> dalAlbum,
             [FromServices] DAL<PessoaComAcesso> dalPessoa
-         ) =>
+           ) =>
         {
-            var album = dalAlbum.RecuperarPor(a => a.Id == id);
+            var album = await dalAlbum.RecuperarComIncludeAsync(a => a.Id == id, a => a.Notas);
             if (album is null) return Results.NotFound();
+
             var email = context.User.Claims
                 .FirstOrDefault(c => c.Type.Equals(ClaimTypes.Email))?.Value
                 ?? throw new InvalidOperationException("Não foi encontrado o email da pessoa logada");
 
-            var pessoa = dalPessoa.RecuperarPor(p => p.Email!.Equals(email))
+            var pessoa = await dalPessoa.RecuperarPorAsync(p => p.Email!.Equals(email))
                 ?? throw new InvalidOperationException("Não foi encontrado o email da pessoa logada");
 
             var avaliacao = album
@@ -149,6 +186,7 @@ public static class AlbumExtensions
 
     }
 
+
     private static ICollection<AlbumResponse> EntityListToResponseList(IEnumerable<Album> lista)
     {
         return lista.Select(a => EntityToResponse(a)).ToList();
@@ -157,7 +195,7 @@ public static class AlbumExtensions
     private static AlbumResponse EntityToResponse(Album album)
     {
         var artista = EntityArtistaToResponse(album.Artista!);
-        return new AlbumResponse(album.Id, album.Nome, album.Musicas, artista) 
+        return new AlbumResponse(album.Id, album.Nome, album.Musicas, artista)
         {
             Classificacao = album.Notas.Select(a => a.Nota).DefaultIfEmpty(0).Average()
         };
@@ -167,38 +205,52 @@ public static class AlbumExtensions
     {
         return new ArtistaResponse(artista.Id, artista.Nome, artista.Bio, artista.FotoPerfil);
     }
-    private static ICollection<Musica> MusicaRequestConverter(ICollection<MusicaRequest> musicas, DAL<Musica> musicaDAL, DAL<Genero> generoDAL)
+
+    // --- Métodos Helper Refatorados para Async ---
+    // (Necessário pois o DAL agora é async e o UoW precisa
+    //  que as entidades sejam rastreadas corretamente)
+
+    /// <summary>
+    /// Converte MusicaRequest em entidade Musica, reutilizando ou criando.
+    /// Refatorado para usar RecuperarParaEdicaoAsync para rastrear entidades existentes.
+    /// </summary>
+    private static async Task<ICollection<Musica>> MusicaRequestConverter(
+        ICollection<MusicaRequest> musicas,
+        DAL<Musica> musicaDAL,
+        DAL<Genero> generoDAL)
     {
         var listaDeMusicas = new List<Musica>();
 
-        var todasMusicas = musicaDAL.Listar();
-
         foreach (var item in musicas)
         {
-            var musicaExistente = todasMusicas
-                .FirstOrDefault(g => g.Nome!.Equals(item.nome, StringComparison.OrdinalIgnoreCase));
+            var musicaExistente = await musicaDAL.RecuperarParaEdicaoAsync(
+                g => g.Nome!.Equals(item.nome, StringComparison.OrdinalIgnoreCase));
 
             if (musicaExistente is not null)
             {
-                musicaDAL.Attach(musicaExistente);
+
                 listaDeMusicas.Add(musicaExistente);
             }
             else
             {
-                var novoGenero = RequestToEntity(item, generoDAL);
-                musicaDAL.Adicionar(novoGenero); 
-                listaDeMusicas.Add(novoGenero);
+                var novaMusica = await RequestToEntity(item, generoDAL);
+                musicaDAL.Adicionar(novaMusica); 
+                listaDeMusicas.Add(novaMusica);
             }
         }
 
         return listaDeMusicas;
     }
-    private static Musica RequestToEntity(MusicaRequest musica, DAL<Genero> generoDAL)
-    {
-        var generos = GeneroRequestConverter(musica.Generos!, generoDAL);
 
+    /// <summary>
+    /// Converte MusicaRequest em uma *nova* entidade Musica.
+    /// </summary>
+    private static async Task<Musica> RequestToEntity(MusicaRequest musica, DAL<Genero> generoDAL)
+    {
+        var generos = await GeneroRequestConverter(musica.Generos!, generoDAL);
         return new Musica(musica.nome, musica.anoLancamento, musica.ArtistaId, generos);
     }
+
     private static Genero RequestToEntityGenero(GeneroRequest genero)
     {
         return new Genero()
@@ -206,37 +258,35 @@ public static class AlbumExtensions
             Nome = genero.Nome,
             Descricao = genero.DescricaoGenero
         };
-
     }
-    private static List<Genero> GeneroRequestConverter(ICollection<GeneroRequest> generos, DAL<Genero> generoDAL)
+
+    /// <summary>
+    /// Converte GeneroRequest em entidade Genero, reutilizando ou criando.
+    /// Refatorado para usar RecuperarParaEdicaoAsync para rastrear entidades existentes.
+    /// </summary>
+    private static async Task<List<Genero>> GeneroRequestConverter(
+        ICollection<GeneroRequest> generos,
+        DAL<Genero> generoDAL)
     {
         var listaDeGeneros = new List<Genero>();
 
-        // Carregue todos os gêneros existentes de uma vez para evitar múltiplas queries
-        var todosGeneros = generoDAL.Listar();
-
         foreach (var item in generos)
         {
-            var generoExistente = todosGeneros
-                .FirstOrDefault(g => g.Nome!.Equals(item.Nome, StringComparison.OrdinalIgnoreCase));
+            var generoExistente = await generoDAL.RecuperarParaEdicaoAsync(
+                g => g.Nome!.Equals(item.Nome, StringComparison.OrdinalIgnoreCase));
 
             if (generoExistente is not null)
             {
-                // Já existe: assegura que está trackeado
-                generoDAL.Attach(generoExistente);
                 listaDeGeneros.Add(generoExistente);
             }
             else
             {
-                // Criar novo e adicionar ao banco com persistência
                 var novoGenero = RequestToEntityGenero(item);
-                generoDAL.Adicionar(novoGenero); // Insere no banco
+                generoDAL.Adicionar(novoGenero);
                 listaDeGeneros.Add(novoGenero);
             }
         }
 
         return listaDeGeneros;
     }
-
-
 }

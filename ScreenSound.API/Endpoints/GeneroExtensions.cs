@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore; 
 using ScreenSound.API.Request;
 using ScreenSound.API.Requests;
 using ScreenSound.Banco;
 using ScreenSound.Modelos;
+using ScreenSound.Shared.Data.Banco;
 
 namespace ScreenSound.API.Endpoints;
 
@@ -15,50 +17,75 @@ public static class GeneroExtensions
             .RequireAuthorization()
             .WithTags("Generos");
 
-        grupo.MapGet("/", ([FromServices] DAL<Genero> dal) =>
+        grupo.MapGet("/", async ([FromServices] DAL<Genero> dal) =>
         {
-            return Results.Ok(dal.Listar().Select(g => new GeneroRequest(g.Nome!, g.Descricao)));
+            var lista = await dal.ListarComoQueryable()
+                .Select(g => new GeneroRequest(g.Nome!, g.Descricao))
+                .ToListAsync();
+
+            return Results.Ok(lista);
         });
 
-        grupo.MapGet("/{nome}", ([FromServices] DAL<Genero> dal, string nome) =>
+        grupo.MapGet("/{nome}", async ([FromServices] DAL<Genero> dal, string nome) =>
         {
-            var generoRequest = dal.RecuperarDTO(
+            var generoRequest = await dal.RecuperarDTOAsync(
                 a => a.Nome!.ToUpper().Equals(nome.ToUpper()),
                 a => new GeneroRequest(a.Nome!, a.Descricao)
             );
+
             return generoRequest is null ? Results.NotFound() : Results.Ok(generoRequest);
         });
 
-        grupo.MapPost("/", ([FromServices] DAL<Genero> dal, [FromBody] GeneroRequest generoRequest) =>
+        grupo.MapPost("/", async (
+            [FromServices] IUnitOfWork uow, 
+            [FromServices] DAL<Genero> dal,
+            [FromBody] GeneroRequest generoRequest) =>
         {
             var genero = new Genero(generoRequest.Nome, generoRequest.DescricaoGenero!);
             if (!genero.EhValido)
             {
                 return Results.BadRequest(genero.Erros.Sumario);
             }
+
             dal.Adicionar(genero);
-            return Results.Ok(genero);
+            await uow.CommitAsync(); 
+
+            return Results.Created(); 
         });
 
-        grupo.MapPut("/", ([FromServices] DAL<Genero> dal, [FromBody] GeneroRequestEdit generoRequestEdit) =>
+        grupo.MapPut("/", async (
+            [FromServices] IUnitOfWork uow,
+            [FromServices] DAL<Genero> dal,
+            [FromBody] GeneroRequestEdit generoRequestEdit) =>
         {
-            var genero = dal.RecuperarPor(a => a.Id == generoRequestEdit.IdEdit);
+            var genero = await dal.RecuperarParaEdicaoAsync(a => a.Id == generoRequestEdit.IdEdit);
             if (genero is null) return Results.NotFound();
 
             genero.Nome = generoRequestEdit.NomeEdit;
             genero.Descricao = generoRequestEdit.DescricaoEdit;
+
             if (!genero.EhValido)
             {
                 return Results.BadRequest(genero.Erros.Sumario);
             }
-            dal.Atualizar(genero);
-            return Results.NoContent();
+
+            await uow.CommitAsync();
+
+            return Results.Ok();
         });
 
-        grupo.MapDelete("/{id}", ([FromServices] DAL<Genero> dal, int id) =>
+        grupo.MapDelete("/{id}", async (
+            [FromServices] IUnitOfWork uow, 
+            [FromServices] DAL<Genero> dal,
+            int id) =>
         {
-            var genero = dal.RecuperarPor(a => a.Id == id);
-            return genero is null ? Results.NotFound() : Results.NoContent();
+            var genero = await dal.RecuperarPorAsync(a => a.Id == id);
+            if (genero is null) return Results.NotFound();
+
+            dal.Deletar(genero);
+            await uow.CommitAsync(); 
+
+            return Results.NoContent();
         });
     }
 }

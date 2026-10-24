@@ -1,4 +1,6 @@
-﻿<MudCard>
+﻿@inject IConfiguration Configuration
+
+<MudCard>
     <MudCardMedia Image="@Imagem"></MudCardMedia>
     <MudCardHeader>
         <CardHeaderContent>
@@ -11,8 +13,8 @@
     </MudCardContent>
     <MudCardActions>
         <MudButton Color="Color.Warning"
-        Variant="Variant.Outlined"
-        Href=@($"/EditarArtista/{Artista!.Nome}")>Detalhes</MudButton>
+                   Variant="Variant.Outlined"
+                   Href=@($"/EditarArtista/{Artista!.Nome}")>Detalhes</MudButton>
     </MudCardActions>
 </MudCard>
 
@@ -24,6 +26,15 @@
 
     protected override void OnInitialized()
     {
-        Imagem = Artista!.FotoPerfil!.Contains("Foto") ? $"https://localhost:7278/{Artista!.FotoPerfil}" : "images/cardArtista.png";
+        var apiUrl = Configuration["APIServer:Url"];
+
+        if (!string.IsNullOrEmpty(Artista?.FotoPerfil) && Artista.FotoPerfil.StartsWith("/"))
+        {
+            Imagem = $"{apiUrl}{Artista.FotoPerfil}";
+        }
+        else
+        {
+            Imagem = "images/cardArtista.png";
+        }
     }
 }
