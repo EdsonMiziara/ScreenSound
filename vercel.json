@@ -6,6 +6,10 @@
   "outputDirectory": "out/wwwroot",
   "rewrites": [
     {
+      "source": "/api/:path*/",
+      "destination": "https://screensound-api-edson-afbhfyg7egbthje5.brazilsouth-01.azurewebsites.net/:path*/"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://screensound-api-edson-afbhfyg7egbthje5.brazilsouth-01.azurewebsites.net/:path*"
     },
