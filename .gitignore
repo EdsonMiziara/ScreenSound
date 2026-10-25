@@ -485,3 +485,6 @@ $RECYCLE.BIN/
 **/appsettings.Local.json
 # O front (Blazor WASM) não tem segredos: o arquivo de desenvolvimento só aponta para a API local
 !ScreenSound.Web/wwwroot/appsettings.Development.json
+
+# Saída do build do front para o Vercel (vercel-build.sh)
+/out/

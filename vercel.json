@@ -1,0 +1,31 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo \"Sem dependências npm: o .NET é instalado no build\"",
+  "buildCommand": "bash vercel-build.sh",
+  "outputDirectory": "out/wwwroot",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://screensound-api-edson-afbhfyg7egbthje5.brazilsouth-01.azurewebsites.net/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Blazor-Environment", "value": "Vercel" }
+      ]
+    },
+    {
+      "source": "/_framework/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
+}
