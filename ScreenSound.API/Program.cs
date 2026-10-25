@@ -129,8 +129,10 @@ app.MapPost("auth/logout", async ([FromServices] SignInManager<PessoaComAcesso> 
 }).RequireAuthorization().WithTags("Autorizacao");
 
 await app.AplicarMigracoesAsync();
-await app.InicializarAcessoAsync();
-await app.PopularCatalogoDemoAsync();
+
+// Contas demo e perfis rodam em segundo plano, com novas tentativas se o banco estiver indisponível;
+// o catálogo demo vem depois porque as playlists de exemplo pertencem à conta admin.
+app.AgendarInicializacaoAcesso(aoConcluir: app.PopularCatalogoDemoAsync);
 
 app.Run();
 
