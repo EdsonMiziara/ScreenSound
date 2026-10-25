@@ -157,8 +157,15 @@ public class ContextoFixture : WebApplicationFactory<Program>, IAsyncLifetime
         }
     }
 
+    private bool descartado;
+
+    // Chamado tanto pelo xUnit (IAsyncLifetime) quanto pelo Dispose da WebApplicationFactory:
+    // a flag garante que a limpeza e a parada do container aconteçam uma única vez.
     public override async ValueTask DisposeAsync()
     {
+        if (descartado) return;
+        descartado = true;
+
         if (_scope != null)
         {
             await LimparBancoDeDados(); // Limpa o banco de dados antes de descartar
@@ -198,9 +205,5 @@ public class ContextoFixture : WebApplicationFactory<Program>, IAsyncLifetime
         });
     }
 
-    async Task IAsyncLifetime.DisposeAsync()
-    {
-        _scope?.Dispose();
-        await _dbContainer.DisposeAsync();
-    }
+    async Task IAsyncLifetime.DisposeAsync() => await DisposeAsync();
 }
