@@ -17,7 +17,7 @@ public class ArtistaAPI
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<List<ArtistaResponse>>("Artistas/");
+            return await _httpClient.GetFromJsonAsync<List<ArtistaResponse>>("Artistas");
         }
         catch (Exception ex)
         {
@@ -37,7 +37,7 @@ public class ArtistaAPI
 
     public async Task AddArtistaAsync(ArtistaRequest artista)
     {
-        var response = await _httpClient.PostAsJsonAsync("Artistas/", artista);
+        var response = await _httpClient.PostAsJsonAsync("Artistas", artista);
         await response.GarantirSucessoAsync();
     }
 
@@ -54,7 +54,7 @@ public class ArtistaAPI
 
     public async Task UpdateArtistaAsync(ArtistaRequestEdit artista)
     {
-        var response = await _httpClient.PutAsJsonAsync("Artistas/", artista);
+        var response = await _httpClient.PutAsJsonAsync("Artistas", artista);
         await response.GarantirSucessoAsync();
     }
 

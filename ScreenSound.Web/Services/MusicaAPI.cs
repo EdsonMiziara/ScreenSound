@@ -17,7 +17,7 @@ public class MusicaAPI
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<List<MusicaResponse>>("Musicas/") ?? new List<MusicaResponse>();
+            return await _httpClient.GetFromJsonAsync<List<MusicaResponse>>("Musicas") ?? new List<MusicaResponse>();
         }
         catch (Exception ex)
         {
@@ -28,7 +28,7 @@ public class MusicaAPI
 
     public async Task AddMusicaAsync(MusicaRequest musicaRequest)
     {
-        var response = await _httpClient.PostAsJsonAsync("Musicas/", musicaRequest);
+        var response = await _httpClient.PostAsJsonAsync("Musicas", musicaRequest);
         await response.GarantirSucessoAsync();
     }
 
@@ -49,7 +49,7 @@ public class MusicaAPI
 
     public async Task UpdateMusicaAsync(MusicaRequestEdit musicaRequest)
     {
-        var response = await _httpClient.PutAsJsonAsync("Musicas/", musicaRequest);
+        var response = await _httpClient.PutAsJsonAsync("Musicas", musicaRequest);
         await response.GarantirSucessoAsync();
     }
 
