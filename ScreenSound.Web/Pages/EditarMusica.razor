@@ -1,172 +1,43 @@
-﻿@page "/EditarMusica/{NomeMusica}" //Definição do parâmetro na rota.
-@inject ArtistaAPI artistasAPI
-@inject GeneroAPI generoAPI
-@inject MusicaAPI musicaAPI
-@inject ISnackbar Snackbar
-@inject NavigationManager navigationManager
+@page "/EditarMusica/{NomeMusica}"
+@attribute [Authorize(Roles = Perfis.Administrador)]
+@inject MusicaAPI MusicaAPI
 
-<MudPaper Class="px-8 pt-2 pb-4 mx-12 my-8" Justify="Justify.Center">
+<PageTitle>Editar faixa · ScreenSound</PageTitle>
 
-    <MudText Class="mt-8" Typo="Typo.h4">Edição de Música</MudText>
-
-    <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
-
-        <MudTextField Class="mt-4" T="string" Placeholder="Nome da música/canção"
-        @bind-Value="nome"
-        Variant="Variant.Outlined"
-        Required="true"
-        RequiredError="Campo obrigatório." />
-
-        <MudSelect Class="mt-4" T="ArtistaResponse" Label="Artistas" Variant="Variant.Outlined" ValueChanged="ArtistaSelecionado" AnchorOrigin="Origin.BottomCenter">
-            @if (artistas is not null)
-            {
-                @foreach (var artista in artistas)
-                {
-                    <MudSelectItem Value="artista">@artista.Nome</MudSelectItem>
-                }
-            }
-        </MudSelect>
-
-        <MudNumericField Class="mt-4" Placeholder="Ano de lançamento"
-        @bind-Value="anoLancamento"
-        Variant="Variant.Outlined"
-        Lines="1"
-        Required="true"
-        RequiredError="Campo obrigatório." />
-
-        <MudSelect Class="mt-4" T="GeneroResponse" Label="Gêneros" Variant="Variant.Outlined" ValueChanged="GeneroSelecionado" AnchorOrigin="Origin.BottomCenter">
-            @if (generos is not null)
-            {
-                @foreach (var generos in generos)
-                {
-                    <MudSelectItem Value="generos" />
-                }
-            }
-            @if (GenerosSelecionados is not null)
-            {
-                foreach (var genero in GenerosSelecionados)
-                {
-                    <MudAlert Severity="Severity.Info">@(genero.Nome) adicionado como gênero da música.</MudAlert>
-                }
-            }
-        </MudSelect>
-
-        <div class="d-flex align-center justify-space-between mt-4">
-            <MudButton Variant="Variant.Filled"
-            Color="Color.Primary"
-            Class="ml-auto"
-            @onclick="Editar">
-                Salvar
-            </MudButton>
-            <MudButton Variant="Variant.Filled"
-            Color="Color.Primary"
-            @onclick="Deletar"
-            Class="ml-auto">
-                Deletar
-            </MudButton>
-            <MudButton Variant="Variant.Filled"
-            Color="Color.Info"
-            @onclick="Voltar"
-            Class="ml-3">
-                Voltar
-            </MudButton>
-        </div>
-
-    </MudForm>
-
-</MudPaper>
+<div class="ss-container ss-pagina">
+    @if (carregando)
+    {
+        <SkeletonFaixas Quantidade="1" />
+    }
+    else if (musica is null)
+    {
+        <EstadoVazio Icone="@Icons.Material.Filled.SearchOff" Titulo="Faixa não encontrada" Texto="Ela pode ter sido removida ou renomeada.">
+            <a href="/Musicas" class="ss-btn ss-btn-primario">Ver todas as faixas</a>
+        </EstadoVazio>
+    }
+    else
+    {
+        <FormularioMusica @key="musica.Id" Musica="musica" />
+    }
+</div>
 
 @code {
-    MudForm form;
-    bool success;
-    string[] errors = { };
+    [Parameter] public string NomeMusica { get; set; } = string.Empty;
 
-    private int anoLancamento;
-    private string? nome;
+    private MusicaResponse? musica;
+    private bool carregando = true;
 
-    private ICollection<ArtistaResponse>? artistas;
-    private ICollection<GeneroResponse>? generos;
-
-    private List<GeneroResponse>? GenerosSelecionados { get; set; } = new();
-    private ArtistaResponse? ArtistaDaMusica { get; set; }
-
-    public MusicaResponse? Musica { get; set; }
-
-    [Parameter]
-    public string? NomeMusica { get; set; }
-
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        artistas = await artistasAPI.GetArtistasAsync();
-        generos = await generoAPI.GetGenerosAsync();
-        Musica = await musicaAPI.GetMusicaPorNomeAsync(NomeMusica!);
-        if (artistas is null || generos is null || Musica is null)
-        {
-            Snackbar.Add("Música consultada não encontrada.", Severity.Error);
-            navigationManager.NavigateTo("/Musicas");
-        }
-        anoLancamento = Musica!.anoLancamento;
-        nome = Musica!.Nome;
-        var artistaNome = await artistasAPI.GetArtistaPorIdAsync(Musica.ArtistaId);
-        Musica.ArtistaNome = artistaNome!.Nome;
-        ArtistaDaMusica = new ArtistaResponse(Musica.ArtistaId, Musica.ArtistaNome, "", "");
-    }
-
-    private void ArtistaSelecionado(ArtistaResponse artista)
-    {
-        ArtistaDaMusica = artista;
-    }
-
-    private void GeneroSelecionado(GeneroResponse genero)
-    {
-        if (GenerosSelecionados is not null)
-        {
-            if (!GenerosSelecionados.Contains(genero))
-            {
-                GenerosSelecionados.Add(genero);
-            }
-        }
-    }
-
-    public async Task Deletar() //Implementação do método que deleta a música.
-    {
+        carregando = true;
         try
         {
-            await musicaAPI.DeleteMusicaAsync(Musica!.Id);
-            Snackbar.Add("Música deletada com sucesso!", Severity.Success);
-            navigationManager.NavigateTo("/Musicas");
+            musica = await MusicaAPI.GetMusicaPorNomeAsync(NomeMusica);
         }
-        catch (Exception)
+        catch (HttpRequestException)
         {
-			//Logger.LogInformation("Erro ao deletar música!");
+            musica = null;
         }
-
-    }
-
-    private ICollection<GeneroRequest>? GenerosRequest { get; set; } = new List<GeneroRequest>();
-
-    private async Task Editar()
-    {
-        try
-        {
-            foreach (var genero in GenerosSelecionados!)
-            {
-                GenerosRequest!.Add(new GeneroRequest(genero.Nome, genero.DescricaoGenero));
-            }
-            var requestEdit = new MusicaRequestEdit(nome!, ArtistaDaMusica!.Id, anoLancamento!, GenerosRequest, Musica!.Id);
-            await musicaAPI.UpdateMusicaAsync(requestEdit);
-            Snackbar.Add("Música atualizada com sucesso!", Severity.Success);
-            navigationManager.NavigateTo("/Musicas");
-
-        }
-        catch (Exception)
-        {
-			// Logger.LogInformation("Erro ao editar música!");
-        }
-    }
-
-    private void Voltar()
-    {
-        navigationManager.NavigateTo("/Musicas");
+        carregando = false;
     }
 }

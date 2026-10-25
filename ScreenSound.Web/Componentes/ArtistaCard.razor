@@ -1,0 +1,23 @@
+<a class="ss-card-artista" href="@Rotas.Artista(Artista.Nome)">
+    <Avatar Nome="@Artista.Nome" Foto="@Artista.FotoPerfil" />
+    <span class="ss-card-titulo">@Artista.Nome</span>
+    <span class="ss-card-sub">
+        @if (TotalFaixas is int total)
+        {
+            @Visual.Plural(total, "faixa", "faixas")
+        }
+        else
+        {
+            <text>Artista</text>
+        }
+    </span>
+    @if (Artista.Classificacao is > 0)
+    {
+        <div class="ss-centro" style="margin-top:6px"><Estrelas Valor="Artista.Classificacao.Value" /></div>
+    }
+</a>
+
+@code {
+    [Parameter, EditorRequired] public ArtistaResponse Artista { get; set; } = default!;
+    [Parameter] public int? TotalFaixas { get; set; }
+}

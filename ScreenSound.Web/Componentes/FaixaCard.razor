@@ -1,0 +1,24 @@
+@implements IDisposable
+@inject PlayerService Player
+
+<div class="ss-card-faixa">
+    <a href="@Rotas.Musica(Musica.Nome)" class="ss-capa-wrap @(Player.Atual?.Id == Musica.Id ? "tocando" : null)" aria-label="@($"Abrir {Musica.Nome}")">
+        <Capa SpotifyUrl="@Musica.SpotifyUrl" Semente="@Musica.Nome" />
+        <div class="ss-capa-play">
+            <BotaoPlay Musica="Musica" Lista="Contexto" />
+        </div>
+    </a>
+    <a class="ss-card-titulo" href="@Rotas.Musica(Musica.Nome)" title="@Musica.Nome">@Musica.Nome</a>
+    <a class="ss-card-sub" href="@Rotas.Artista(Musica.NomeArtista)">@(Musica.NomeArtista ?? "Artista desconhecido")</a>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public MusicaResponse Musica { get; set; } = default!;
+    [Parameter] public IEnumerable<MusicaResponse>? Contexto { get; set; }
+
+    protected override void OnInitialized() => Player.OnMudanca += AoMudar;
+
+    private void AoMudar() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Player.OnMudanca -= AoMudar;
+}

@@ -1,0 +1,37 @@
+@inject CapaService CapaService
+
+<div class="ss-capa @Class" style="background:@Visual.Gradiente(Semente);@Style">
+    <Icone Svg="@IconeFallback" Class="ss-capa-icone" />
+    @if (url is not null)
+    {
+        <img src="@url" alt="" loading="lazy" class="@(carregada ? "carregada" : null)" @onload="() => carregada = true" />
+    }
+    @ChildContent
+</div>
+
+@code {
+    /// <summary>Link do Spotify: quando existe, a capa real é buscada pelo oEmbed.</summary>
+    [Parameter] public string? SpotifyUrl { get; set; }
+
+    /// <summary>Texto usado para gerar o gradiente de fallback (normalmente o nome).</summary>
+    [Parameter] public string? Semente { get; set; }
+
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public string? Style { get; set; }
+    [Parameter] public string IconeFallback { get; set; } = Icons.Material.Filled.MusicNote;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string? url;
+    private string? urlCarregada;
+    private bool carregada;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SpotifyUrl == urlCarregada) return;
+
+        urlCarregada = SpotifyUrl;
+        url = null;
+        carregada = false;
+        url = await CapaService.ObterAsync(SpotifyUrl);
+    }
+}

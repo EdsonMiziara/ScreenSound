@@ -1,4 +1,5 @@
-﻿using ScreenSound.Shared.Modelos.Avaliacao;
+﻿using ScreenSound.Shared.Modelos.Auxiliar;
+using ScreenSound.Shared.Modelos.Avaliacao;
 using ScreenSound.Shared.Modelos.Validacao;
 
 namespace ScreenSound.Modelos;
@@ -12,6 +13,16 @@ public class Musica : Valida, IAvaliavel<Musica>
     }
 
     public string Nome { get; set; }
+    public string? _spotifyUrl;
+    public string? SpotifyUrl
+    {
+        get => _spotifyUrl;
+        set
+        {
+            _spotifyUrl = value;
+            Validar();
+        }
+    }
     public virtual ICollection<Avaliacao> Notas { get; set; } = new List<Avaliacao>();
     public int Id { get; set; }
     public int? AnoLancamento { get; set; }
@@ -90,6 +101,10 @@ public class Musica : Valida, IAvaliavel<Musica>
         else if (Artista is not null && !Artista.EhValido)
         {
             Erros.RegistrarErro("Artista adicionado não pode ser invalido");
+        }
+        else if(!SpotifyLink.EhValido(this.SpotifyUrl))
+            {
+            Erros.RegistrarErro("Link do Spotify inválido.");
         }
     }
 }

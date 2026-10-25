@@ -1,8 +1,6 @@
 ﻿using ScreenSound.Web.Requests;
 using ScreenSound.Web.Response;
-using System.Net.Http;
 using System.Net.Http.Json;
-using System.Text.Json;
 
 namespace ScreenSound.Web.Services;
 
@@ -19,60 +17,51 @@ public class ArtistaAPI
     {
         try
         {
-            // Log da URL antes da requisição
-            Console.WriteLine($"URL da requisição: {_httpClient.BaseAddress}Artistas/");
-
-            var response = await _httpClient.GetAsync("artistas/");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"❌ Erro HTTP: {response.StatusCode}");
-                return null;
-            }
-
-            var content = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"📦 Conteúdo bruto da resposta: {content}");
-
-            var artistas = JsonSerializer.Deserialize<ICollection<ArtistaResponse>>(content, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            Console.WriteLine($"✅ Artistas desserializados: {artistas?.Count ?? 0}");
-
-            return artistas;
+            return await _httpClient.GetFromJsonAsync<List<ArtistaResponse>>("Artistas/");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Erro ao buscar artistas: {ex.Message}");
+            Console.WriteLine($"Erro ao buscar artistas: {ex.Message}");
             return null;
         }
     }
 
     public async Task<ArtistaResponse?> GetArtistaPorNomeAsync(string nome)
     {
-        return await _httpClient.GetFromJsonAsync<ArtistaResponse>($"Artistas/{nome}");
+        var response = await _httpClient.GetAsync($"Artistas/{Uri.EscapeDataString(nome)}");
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+
+        await response.GarantirSucessoAsync();
+        return await response.Content.ReadFromJsonAsync<ArtistaResponse>();
     }
+
     public async Task AddArtistaAsync(ArtistaRequest artista)
     {
-        await _httpClient.PostAsJsonAsync("Artistas/", artista);
+        var response = await _httpClient.PostAsJsonAsync("Artistas/", artista);
+        await response.GarantirSucessoAsync();
     }
+
     public async Task<ArtistaResponse?> GetArtistaPorIdAsync(int id)
     {
         return await _httpClient.GetFromJsonAsync<ArtistaResponse>($"Artistas/RecuperaPor/{id}");
     }
+
     public async Task DeleteArtistaAsync(int id)
     {
-        await _httpClient.DeleteAsync($"Artistas/{id}");
+        var response = await _httpClient.DeleteAsync($"Artistas/{id}");
+        await response.GarantirSucessoAsync();
     }
+
     public async Task UpdateArtistaAsync(ArtistaRequestEdit artista)
     {
-        await _httpClient.PutAsJsonAsync("Artistas/", artista);
+        var response = await _httpClient.PutAsJsonAsync("Artistas/", artista);
+        await response.GarantirSucessoAsync();
     }
 
     public async Task AvaliaArtistaAsync(int artistaId, int nota)
     {
-        await _httpClient.PostAsJsonAsync($"Artistas/Avaliacao/{artistaId}", new {nota});
+        var response = await _httpClient.PostAsJsonAsync($"Artistas/Avaliacao/{artistaId}", new { nota });
+        await response.GarantirSucessoAsync();
     }
 
     public async Task<AvaliacaoResponse?> GetAvaliacaoArtistaAsync(int artistaId)

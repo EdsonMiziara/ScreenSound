@@ -1,0 +1,33 @@
+@inject IConfiguration Configuration
+
+<div class="ss-avatar @Class" style="background:@Visual.Gradiente(Nome);@TamanhoCss">
+    <span>@Visual.Iniciais(Nome)</span>
+    @if (foto is not null && !erro)
+    {
+        <img src="@foto" alt="@Nome" loading="lazy" @onerror="() => erro = true" />
+    }
+</div>
+
+@code {
+    [Parameter] public string? Nome { get; set; }
+
+    /// <summary>Caminho da foto como vem da API (relativo, absoluto ou data URL).</summary>
+    [Parameter] public string? Foto { get; set; }
+
+    /// <summary>Tamanho em pixels; se omitido, o tamanho vem do CSS.</summary>
+    [Parameter] public int? Tamanho { get; set; }
+
+    [Parameter] public string? Class { get; set; }
+
+    private string? foto;
+    private bool erro;
+
+    private string TamanhoCss => Tamanho is int t ? $"width:{t}px;height:{t}px;font-size:{t * 38 / 100}px;" : string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        var nova = Visual.FotoArtista(Foto, Configuration["APIServer:Url"]);
+        if (nova != foto) erro = false;
+        foto = nova;
+    }
+}

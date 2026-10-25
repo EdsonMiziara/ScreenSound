@@ -5,14 +5,14 @@ namespace ScreenSound.Menus;
 
 class MenuExibirDetalhes : Menu
 {
-    public override void Executar(DAL<Artista> artistaDAL)
+    public override async void Executar(DAL<Artista> artistaDAL)
     {
 
         base.Executar(artistaDAL);
         ExibirTituloDaOpcao("Exibir detalhes da banda");
         Console.Write("Digite o nome da banda que deseja conhecer melhor: ");
         string nomeDoArtista = Console.ReadLine()!;
-        var artistaRecuperado = artistaDAL.RecuperarPor(a => a.Nome.Equals(nomeDoArtista));
+        var artistaRecuperado = await artistaDAL.RecuperarPorAsync(a => a.Nome.Equals(nomeDoArtista));
         if (artistaRecuperado is not null)
         {
             Console.WriteLine($"\nDiscografia: ");

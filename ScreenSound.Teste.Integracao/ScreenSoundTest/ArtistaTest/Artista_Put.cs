@@ -33,7 +33,7 @@ public class Artista_Put
             app.Context.SaveChanges();
         }
 
-        using var client = app.CreateClient();
+        using var client = app.CreateClientAuthorized();
 
         artistaExistente.Nome = "João Arthur. [Atualizado]";
         artistaExistente.Bio = "Artista de pagode carioca. [Atualizada]";

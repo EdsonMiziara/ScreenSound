@@ -1,0 +1,284 @@
+@page "/Perfil"
+@implements IDisposable
+@inject PerfilAPI PerfilAPI
+@inject AuthAPI AuthAPI
+@inject PlayerService Player
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Editar perfil · ScreenSound</PageTitle>
+
+<div class="ss-container ss-pagina">
+    <div class="ss-cab-pagina">
+        <div>
+            <h1 class="ss-titulo-pagina">Seu perfil</h1>
+            <p class="ss-secao-sub">Como você aparece para a comunidade do ScreenSound</p>
+        </div>
+    </div>
+
+    @if (perfil is null)
+    {
+        <SkeletonFaixas Quantidade="2" />
+    }
+    else
+    {
+        <section class="ss-form-card ss-secao">
+            <div class="ss-form-previa">
+                <Avatar Nome="@(string.IsNullOrWhiteSpace(nome) ? perfil.NomePublico : nome)" Foto="@(previaFoto ?? perfil.FotoPerfil)" />
+                <label class="ss-upload" for="upload-foto-perfil">
+                    <Icone Svg="@Icons.Material.Filled.PhotoCamera" />
+                    @(enviandoFoto ? "Enviando..." : perfil.FotoPerfil is null ? "Adicionar foto" : "Trocar foto")
+                </label>
+                <InputFile id="upload-foto-perfil" class="ss-sr" accept="image/jpeg,image/png,image/webp" OnChange="EnviarFoto" disabled="@enviandoFoto" />
+                @if (perfil.FotoPerfil is not null)
+                {
+                    <button class="ss-btn ss-btn-fantasma ss-btn-sm" @onclick="RemoverFoto" disabled="@enviandoFoto">Remover foto</button>
+                }
+                <p class="ss-form-previa-legenda">JPG, PNG ou WEBP. A imagem é recortada em 400×400.</p>
+            </div>
+
+            <form class="ss-form-campos" @onsubmit="SalvarPerfil">
+                <div class="ss-perfil-identidade">
+                    <span class="ss-papel @(perfil.Admin ? "admin" : null)">@(perfil.Admin ? "Administrador" : "Ouvinte")</span>
+                    @if (perfil.ContaDemo)
+                    {
+                        <span class="ss-papel">Conta de demonstração</span>
+                    }
+                    <span class="ss-muted" style="font-size:13px">@perfil.Email</span>
+                </div>
+
+                <div class="ss-input-grupo">
+                    <label for="nome-exibicao">Nome de exibição</label>
+                    <input id="nome-exibicao" class="ss-input" maxlength="60" placeholder="@perfil.NomePublico" @bind="nome" @bind:event="oninput" />
+                    <p class="ss-dica">Aparece no menu e nas suas playlists públicas. Em branco, usamos a parte do seu e-mail antes do @@.</p>
+                </div>
+
+                <div class="ss-input-grupo">
+                    <label for="bio">Bio</label>
+                    <textarea id="bio" class="ss-input" maxlength="300" rows="4" placeholder="Conte o que você gosta de ouvir" @bind="bio" @bind:event="oninput"></textarea>
+                    <p class="ss-dica">@(bio?.Length ?? 0)/300</p>
+                </div>
+
+                <div class="ss-form-acoes">
+                    <span></span>
+                    <button type="submit" class="ss-btn ss-btn-primario" disabled="@salvandoPerfil">
+                        @(salvandoPerfil ? "Salvando..." : "Salvar perfil")
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <div class="ss-perfil-cards">
+            <section class="ss-card-config">
+                <h2><Icone Svg="@Icons.Material.Filled.Lock" /> Senha</h2>
+                @if (perfil.ContaDemo)
+                {
+                    <p class="ss-muted">A senha das contas de demonstração é compartilhada com todos os visitantes e não pode ser alterada.</p>
+                }
+                else
+                {
+                    @if (erroSenha is not null)
+                    {
+                        <div class="ss-erro" role="alert">@erroSenha</div>
+                    }
+                    <form @onsubmit="TrocarSenha">
+                        <div class="ss-input-grupo">
+                            <label for="senha-atual">Senha atual</label>
+                            <input id="senha-atual" class="ss-input" type="password" autocomplete="current-password" @bind="senhaAtual" />
+                        </div>
+                        <div class="ss-input-grupo">
+                            <label for="senha-nova">Nova senha</label>
+                            <input id="senha-nova" class="ss-input" type="password" autocomplete="new-password" @bind="senhaNova" />
+                            <p class="ss-dica">Mínimo de 6 caracteres, com maiúscula, minúscula, número e símbolo.</p>
+                        </div>
+                        <div class="ss-input-grupo">
+                            <label for="senha-confirma">Confirme a nova senha</label>
+                            <input id="senha-confirma" class="ss-input" type="password" autocomplete="new-password" @bind="senhaConfirmacao" />
+                        </div>
+                        <button type="submit" class="ss-btn ss-btn-contorno" disabled="@salvandoSenha">
+                            @(salvandoSenha ? "Alterando..." : "Alterar senha")
+                        </button>
+                    </form>
+                }
+            </section>
+
+            <section class="ss-card-config">
+                <h2><Icone Svg="@Icons.Material.Filled.GraphicEq" /> Spotify Premium</h2>
+                <p class="ss-muted">
+                    Conecte sua conta Spotify Premium para ouvir as faixas completas direto pelo player do ScreenSound,
+                    com controle de volume. Sem conexão, o player usa o embed público do Spotify (prévias para quem não está logado nele).
+                </p>
+                @if (Player.Premium)
+                {
+                    <p class="ss-status-ok"><Icone Svg="@Icons.Material.Filled.CheckCircle" /> Conectado@(Player.ContaSpotify is null ? "" : $" como {Player.ContaSpotify}")</p>
+                    <button class="ss-btn ss-btn-contorno" @onclick="Player.DesconectarSpotifyAsync">Desconectar Spotify</button>
+                }
+                else if (!Player.SpotifyConfigurado)
+                {
+                    <p class="ss-dica">A integração com o Spotify ainda não foi configurada neste ambiente (ClientId ausente).</p>
+                }
+                else
+                {
+                    @if (Player.ErroPremium is not null)
+                    {
+                        <div class="ss-erro" role="alert">@Player.ErroPremium</div>
+                    }
+                    <button class="ss-btn ss-btn-primario" @onclick="ConectarSpotify" disabled="@Player.ConectandoPremium">
+                        @(Player.ConectandoPremium ? "Conectando..." : "Conectar Spotify Premium")
+                    </button>
+                }
+            </section>
+        </div>
+    }
+</div>
+
+@code {
+    private PerfilResponse? perfil;
+    private string? nome;
+    private string? bio;
+    private string? previaFoto;
+    private bool salvandoPerfil;
+    private bool enviandoFoto;
+
+    private string? senhaAtual;
+    private string? senhaNova;
+    private string? senhaConfirmacao;
+    private string? erroSenha;
+    private bool salvandoSenha;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Player.OnMudanca += AoMudar;
+        perfil = await PerfilAPI.GetAsync();
+        if (perfil is null)
+        {
+            Navigation.NavigateTo("/login?ReturnUrl=%2FPerfil");
+            return;
+        }
+
+        Preencher(perfil);
+    }
+
+    private void Preencher(PerfilResponse dados)
+    {
+        perfil = dados;
+        nome = dados.NomeExibicao;
+        bio = dados.Bio;
+    }
+
+    private async Task SalvarPerfil()
+    {
+        salvandoPerfil = true;
+        try
+        {
+            var atualizado = await PerfilAPI.AtualizarAsync(nome, bio);
+            if (atualizado is not null) Preencher(atualizado);
+            AuthAPI.AtualizarEstado();
+            Snackbar.Add("Perfil atualizado!", Severity.Success);
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            salvandoPerfil = false;
+        }
+    }
+
+    private async Task EnviarFoto(InputFileChangeEventArgs e)
+    {
+        enviandoFoto = true;
+        try
+        {
+            const string formato = "image/jpeg";
+            var redimensionada = await e.File.RequestImageFileAsync(formato, 400, 400);
+            await using var stream = redimensionada.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024);
+            using var memoria = new MemoryStream();
+            await stream.CopyToAsync(memoria);
+
+            var base64 = Convert.ToBase64String(memoria.ToArray());
+            previaFoto = $"data:{formato};base64,{base64}";
+            StateHasChanged();
+
+            var atualizado = await PerfilAPI.AtualizarFotoAsync(base64);
+            if (atualizado is not null) perfil = atualizado;
+            previaFoto = null;
+            AuthAPI.AtualizarEstado();
+            Snackbar.Add("Foto atualizada!", Severity.Success);
+        }
+        catch (HttpRequestException ex)
+        {
+            previaFoto = null;
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception)
+        {
+            previaFoto = null;
+            Snackbar.Add("Não foi possível ler a imagem. Tente um arquivo menor (até 2 MB).", Severity.Warning);
+        }
+        finally
+        {
+            enviandoFoto = false;
+        }
+    }
+
+    private async Task RemoverFoto()
+    {
+        try
+        {
+            var atualizado = await PerfilAPI.RemoverFotoAsync();
+            if (atualizado is not null) perfil = atualizado;
+            AuthAPI.AtualizarEstado();
+            Snackbar.Add("Foto removida.", Severity.Normal);
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task TrocarSenha()
+    {
+        erroSenha = null;
+        if (string.IsNullOrEmpty(senhaAtual) || string.IsNullOrEmpty(senhaNova))
+        {
+            erroSenha = "Preencha a senha atual e a nova senha.";
+            return;
+        }
+        if (senhaNova != senhaConfirmacao)
+        {
+            erroSenha = "A confirmação não confere com a nova senha.";
+            return;
+        }
+
+        salvandoSenha = true;
+        try
+        {
+            await PerfilAPI.TrocarSenhaAsync(senhaAtual, senhaNova);
+            senhaAtual = senhaNova = senhaConfirmacao = null;
+            Snackbar.Add("Senha alterada com sucesso.", Severity.Success);
+        }
+        catch (HttpRequestException ex)
+        {
+            erroSenha = TraduzirErroSenha(ex.Message);
+        }
+        finally
+        {
+            salvandoSenha = false;
+        }
+    }
+
+    private Task ConectarSpotify() => Player.ConectarSpotifyAsync("/Perfil");
+
+    private static string TraduzirErroSenha(string mensagem) => mensagem switch
+    {
+        var m when m.Contains("Incorrect password", StringComparison.OrdinalIgnoreCase) => "A senha atual está incorreta.",
+        var m when m.Contains("must", StringComparison.OrdinalIgnoreCase) => "A nova senha não atende aos requisitos: mínimo de 6 caracteres, com maiúscula, minúscula, número e símbolo.",
+        _ => mensagem
+    };
+
+    private void AoMudar() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Player.OnMudanca -= AoMudar;
+}

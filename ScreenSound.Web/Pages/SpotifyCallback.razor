@@ -1,0 +1,34 @@
+@page "/spotify/callback"
+@inject IJSRuntime JS
+@inject PlayerService Player
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Conectando ao Spotify · ScreenSound</PageTitle>
+
+<div class="ss-container ss-pagina ss-centro">
+    <p class="ss-muted">Conectando sua conta do Spotify...</p>
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var retorno = "/";
+        try
+        {
+            await Player.PrepararSpotifyAsync();
+            var query = new Uri(Navigation.Uri).Query;
+            retorno = await JS.InvokeAsync<string>("ssSpotify.concluirLogin", query);
+            await Player.AtivarPremiumAsync();
+            Snackbar.Add("Spotify conectado! Agora você pode controlar o volume.", Severity.Success);
+        }
+        catch (JSException ex)
+        {
+            Snackbar.Add(ex.Message.Split('\n')[0], Severity.Warning);
+        }
+
+        Navigation.NavigateTo(retorno, replace: true);
+    }
+}

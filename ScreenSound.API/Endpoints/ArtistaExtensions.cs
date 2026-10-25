@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ScreenSound.API.Request;
 using ScreenSound.API.Response;
+using ScreenSound.API.Seguranca;
 using ScreenSound.Banco;
 using ScreenSound.Modelos;
 using ScreenSound.Shared.Data.Banco;
@@ -27,8 +28,12 @@ public static class ArtistasExtensions
 
         grupo.MapGet("/", async ([FromServices] DAL<Artista> dal) =>
         {
-            var resposta = await dal.ListarComoQueryable()
-                .Select(a => new ArtistaResponse(a.Id, a.Nome, a.Bio, a.FotoPerfil))
+            var resposta = await dal.ListarComoQueryable().Include(a => a.Notas)
+                .Select(a => new ArtistaResponse(a.Id, a.Nome, a.Bio, a.FotoPerfil) {
+                    Classificacao = a.Notas
+                    .Select(n => (double?)n.Nota)
+                    .Average() ?? 0
+                })
                 .ToListAsync();
 
             return Results.Ok(resposta);
@@ -101,31 +106,49 @@ public static class ArtistasExtensions
             await uow.CommitAsync();
 
             return Results.Created();
-        });
+        }).RequireAuthorization(Politicas.Admin);
 
         grupo.MapDelete("/{Id}", async (
-            [FromServices] IUnitOfWork uow, 
-            [FromServices] DAL<Artista> dal,
-            int Id) =>
+     [FromServices] IUnitOfWork uow,
+     [FromServices] DAL<Artista> dalArtista,
+     [FromServices] DAL<Musica> dalMusica,
+     [FromServices] IHostEnvironment env,
+     int Id) =>
         {
-            var artista = await dal.RecuperarPorAsync(a => a.Id == Id);
+            var artista = await dalArtista.RecuperarComIncludeAsync(
+                a => a.Id == Id,
+                a => a.Musicas,
+                a => a.Notas
+            );
+
             if (artista is null) return Results.NotFound();
 
-            if (artista.FotoPerfil != null && artista.FotoPerfil != DefaultAvatarUrl)
+            if (artista.Notas is not null && artista.Notas.Any())
+            {
+                artista.Notas.Clear();
+            }
+
+            if (artista.Musicas is not null && artista.Musicas.Any())
+            {
+                return Results.BadRequest("Não é possivel excluir o artista, pois ele possui músicas atreladas a ele");
+            }
+
+            if (!string.IsNullOrEmpty(artista.FotoPerfil) && artista.FotoPerfil != DefaultAvatarUrl)
             {
                 var nomeFoto = artista.FotoPerfil.Split('/').Last();
-                var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "FotosPerfil", nomeFoto);
+                var path = Path.Combine(env.ContentRootPath, "wwwroot", "FotosPerfil", nomeFoto);
+
                 if (File.Exists(path))
                 {
                     File.Delete(path);
                 }
             }
 
-            dal.Deletar(artista);
+            dalArtista.Deletar(artista);
             await uow.CommitAsync();
 
             return Results.NoContent();
-        });
+        }).RequireAuthorization(Politicas.Admin);
 
         grupo.MapPut("/", async (
             [FromServices] IUnitOfWork uow,
@@ -146,7 +169,7 @@ public static class ArtistasExtensions
             await uow.CommitAsync(); 
 
             return Results.Ok();
-        });
+        }).RequireAuthorization(Politicas.Admin);
 
         grupo.MapPost("/Avaliacao/{ArtistaId}", async (
             HttpContext httpContext,

@@ -1,0 +1,83 @@
+@implements IDisposable
+@inject PlayerService Player
+@inject NavigationManager Navigation
+
+<div class="ss-dropdown ss-volume">
+    <button class="ss-btn-icone @(Player.Premium ? null : "inativo")" title="@Dica" aria-label="@Dica" @onclick="Clicar">
+        <Icone Svg="@IconeAtual" />
+    </button>
+
+    @if (Player.Premium)
+    {
+        <input type="range" class="ss-volume-slider" min="0" max="100" aria-label="Volume"
+               value="@((int)Math.Round((Player.Mudo ? 0 : Player.Volume) * 100))"
+               style="--progresso:@Visual.Porcentagem(Player.Mudo ? 0 : Player.Volume)"
+               @oninput="Mudar" />
+    }
+
+    @if (aberto)
+    {
+        <div class="ss-dropdown-fundo" @onclick="() => aberto = false"></div>
+        <div class="ss-dropdown-menu acima ss-volume-popover">
+            <strong>Controle de volume</strong>
+            <p>
+                O player padrão usa o embed público do Spotify, que não permite controlar o volume pelo site.
+                Conecte uma conta <b>Spotify Premium</b> para tocar as faixas completas pelo ScreenSound, com volume e mudo.
+            </p>
+            @if (Player.ErroPremium is not null)
+            {
+                <div class="ss-erro">@Player.ErroPremium</div>
+            }
+            @if (Player.SpotifyConfigurado)
+            {
+                <button class="ss-btn ss-btn-primario ss-btn-sm ss-btn-bloco" disabled="@Player.ConectandoPremium" @onclick="Conectar">
+                    @(Player.ConectandoPremium ? "Conectando..." : "Conectar Spotify Premium")
+                </button>
+            }
+            else
+            {
+                <p class="ss-dica">A integração com o Spotify não está configurada neste ambiente.</p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool aberto;
+
+    private string IconeAtual => !Player.Premium
+        ? Icons.Material.Filled.VolumeUp
+        : Player.Mudo || Player.Volume == 0
+            ? Icons.Material.Filled.VolumeOff
+            : Player.Volume < 0.5 ? Icons.Material.Filled.VolumeDown : Icons.Material.Filled.VolumeUp;
+
+    private string Dica => Player.Premium
+        ? (Player.Mudo ? "Ativar som" : "Silenciar")
+        : "Volume (requer Spotify Premium)";
+
+    protected override void OnInitialized() => Player.OnMudanca += AoMudar;
+
+    private async Task Clicar()
+    {
+        if (Player.Premium) await Player.AlternarMudoAsync();
+        else aberto = !aberto;
+    }
+
+    private async Task Mudar(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var valor))
+        {
+            await Player.DefinirVolumeAsync(valor / 100d);
+        }
+    }
+
+    private Task Conectar() => Player.ConectarSpotifyAsync(Navigation.ToBaseRelativePath(Navigation.Uri) is var rel && rel.Length > 0 ? "/" + rel : "/");
+
+    private void AoMudar()
+    {
+        if (Player.Premium) aberto = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => Player.OnMudanca -= AoMudar;
+}

@@ -1,0 +1,26 @@
+<div class="ss-card-playlist">
+    <a href="@Rotas.Playlist(Playlist.Id)" class="ss-pilha" aria-label="@($"Abrir playlist {Playlist.Nome}")">
+        <div class="ss-capa-wrap">
+            <Capa SpotifyUrl="@Playlist.Musicas.FirstOrDefault(m => m.Tocavel)?.SpotifyUrl" Semente="@Playlist.Nome" IconeFallback="@Icons.Material.Filled.QueueMusic" />
+            @if (Playlist.Musicas.Any(m => m.Tocavel))
+            {
+                <div class="ss-capa-play">
+                    <BotaoPlay Lista="Playlist.Musicas" />
+                </div>
+            }
+        </div>
+    </a>
+    <a class="ss-card-titulo" href="@Rotas.Playlist(Playlist.Id)" title="@Playlist.Nome">@Playlist.Nome</a>
+    <span class="ss-card-sub">
+        @if (!Playlist.Publica)
+        {
+            <Icone Svg="@Icons.Material.Filled.Lock" Class="ss-icone-inline" />
+        }
+        @(MostrarDono && !string.IsNullOrEmpty(Playlist.NomeDono) ? $"{Playlist.NomeDono} · " : "")@Visual.Plural(Playlist.TotalMusicas, "faixa", "faixas")
+    </span>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public PlaylistResponse Playlist { get; set; } = default!;
+    [Parameter] public bool MostrarDono { get; set; }
+}

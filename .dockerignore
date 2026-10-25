@@ -8,6 +8,7 @@
 **/.toolstarget
 **/.vs
 **/.vscode
+**/.idea
 **/*.*proj.user
 **/*.dbmdl
 **/*.jfm
@@ -15,16 +16,18 @@
 **/bin
 **/charts
 **/docker-compose*
-**/Dockerfile*
 **/node_modules
 **/npm-debug.log
 **/obj
 **/secrets.dev.yaml
 **/values.dev.yaml
+**/*.log
 LICENSE
 README.md
-!**/.gitignore
-!.git/HEAD
-!.git/config
-!.git/packed-refs
-!.git/refs/heads/**
+
+# Configurações locais com segredos (connection string do Azure) nunca entram na imagem
+ScreenSound.API/appsettings.Development.json
+**/appsettings.Local.json
+
+# Fotos enviadas em desenvolvimento
+ScreenSound.API/wwwroot/FotosPerfil/*

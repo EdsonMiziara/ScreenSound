@@ -1,6 +1,14 @@
 ﻿@page "/logout"
 @inject AuthAPI AuthAPI
+@inject PlayerService Player
+@inject NavigationManager Navigation
 @attribute [AllowAnonymous]
+
+<PageTitle>Saindo · ScreenSound</PageTitle>
+
+<div class="ss-container ss-pagina ss-centro">
+    <p class="ss-muted">Saindo da sua conta...</p>
+</div>
 
 @code {
 	protected override async Task OnInitializedAsync()
@@ -10,6 +18,7 @@
 			await AuthAPI.LogoutAsync();
 		}
 
-		await base.OnInitializedAsync();
+		await Player.FecharAsync();
+		Navigation.NavigateTo("/");
 	}
 }

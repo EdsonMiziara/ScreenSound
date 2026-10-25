@@ -1,0 +1,66 @@
+@implements IDisposable
+@inject PlayerService Player
+@inject ISnackbar Snackbar
+
+<button type="button"
+        class="ss-play @Tamanho @(Habilitado ? null : "desabilitado") @Class"
+        title="@Dica"
+        aria-label="@Dica"
+        @onclick="Clicar"
+        @onclick:stopPropagation="true"
+        @onclick:preventDefault="true">
+    <Icone Svg="@(Ativo ? Icons.Material.Filled.Pause : Icons.Material.Filled.PlayArrow)" />
+</button>
+
+@code {
+    /// <summary>Faixa a tocar. Se nula, o botão toca a <see cref="Lista"/> inteira.</summary>
+    [Parameter] public MusicaResponse? Musica { get; set; }
+
+    /// <summary>Contexto da faixa (vira a fila) ou a lista a ser tocada.</summary>
+    [Parameter] public IEnumerable<MusicaResponse>? Lista { get; set; }
+
+    /// <summary>"sm", "lg" ou vazio.</summary>
+    [Parameter] public string? Tamanho { get; set; }
+
+    [Parameter] public string? Class { get; set; }
+
+    private bool Habilitado => Musica?.Tocavel ?? Lista?.Any(m => m.Tocavel) ?? false;
+
+    private bool AtualNaLista => Player.Atual is { } atual && (Lista?.Any(m => m.Id == atual.Id) ?? false);
+
+    private bool Ativo => Musica is not null
+        ? Player.EstaTocando(Musica.Id)
+        : AtualNaLista && (Player.Tocando || Player.Carregando);
+
+    private string Dica => !Habilitado
+        ? "Sem link do Spotify cadastrado"
+        : Ativo ? "Pausar" : "Tocar";
+
+    protected override void OnInitialized() => Player.OnMudanca += AoMudar;
+
+    private void AoMudar() => InvokeAsync(StateHasChanged);
+
+    private async Task Clicar()
+    {
+        if (!Habilitado)
+        {
+            Snackbar.Add("Esta faixa ainda não tem um link do Spotify. Edite a faixa para adicionar.", Severity.Info);
+            return;
+        }
+
+        if (Musica is not null)
+        {
+            await Player.TocarAsync(Musica, Lista);
+        }
+        else if (AtualNaLista)
+        {
+            await Player.AlternarAsync();
+        }
+        else
+        {
+            await Player.TocarListaAsync(Lista!);
+        }
+    }
+
+    public void Dispose() => Player.OnMudanca -= AoMudar;
+}

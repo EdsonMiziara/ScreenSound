@@ -1,20 +1,32 @@
-﻿
 <CascadingAuthenticationState>
-<Router AppAssembly="@typeof(App).Assembly">
-    <Found Context="routeData">
-        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" >
-            <NotAuthorized>
-                <RedirectToLogin/>
-            </NotAuthorized>
-
-        </AuthorizeRouteView> 
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-    </Found>
-    <NotFound>
-        <PageTitle>Not found</PageTitle>
-        <LayoutView Layout="@typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
-        </LayoutView>
-    </NotFound>
-</Router>
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                <NotAuthorized>
+                    @if (context.User.Identity?.IsAuthenticated == true)
+                    {
+                        <AcessoNegado />
+                    }
+                    else
+                    {
+                        <RedirectToLogin />
+                    }
+                </NotAuthorized>
+                <Authorizing>
+                    <div class="ss-container ss-pagina"><SkeletonFaixas Quantidade="3" /></div>
+                </Authorizing>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Página não encontrada · ScreenSound</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <div class="ss-404" role="alert">
+                    <h1>404</h1>
+                    <p>Essa faixa saiu do ar — a página que você procura não existe.</p>
+                    <a href="/" class="ss-btn ss-btn-primario ss-btn-lg">Voltar ao início</a>
+                </div>
+            </LayoutView>
+        </NotFound>
+    </Router>
 </CascadingAuthenticationState>

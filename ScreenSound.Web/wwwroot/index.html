@@ -1,31 +1,88 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ScreenSound.Web</title>
+    <meta name="theme-color" content="#121212" />
+    <title>ScreenSound · Descubra, ouça e monte suas playlists</title>
+    <meta name="description" content="ScreenSound é uma plataforma de descoberta musical inspirada no SoundCloud: ouça faixas pelo player integrado ao Spotify, avalie artistas e monte playlists. Projeto full stack em .NET 9 com Blazor WebAssembly, ASP.NET Core, EF Core e Azure." />
+    <meta name="author" content="EdsonMiziara" />
+
+    <!-- Prévia ao compartilhar o link (LinkedIn, WhatsApp, Slack...) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ScreenSound" />
+    <meta property="og:title" content="ScreenSound · Descubra, ouça e monte suas playlists" />
+    <meta property="og:description" content="Plataforma musical inspirada no SoundCloud, construída de ponta a ponta em .NET 9: Blazor WebAssembly, ASP.NET Core, EF Core e Azure." />
+    <meta property="og:image" content="icon-512.png" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta name="twitter:card" content="summary" />
+
     <base href="/" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="css/app.css" />
-    <link rel="icon" type="image/png" href="favicon.png" />
     <link href="ScreenSound.Web.styles.css" rel="stylesheet" />
 </head>
 
 <body>
     <div id="app">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
-        <div class="loading-progress-text"></div>
+        <div class="ss-boot" role="status" aria-live="polite">
+            <div class="ss-boot-logo">
+                <span class="ss-boot-icone" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+                <span>ScreenSound</span>
+            </div>
+            <p class="ss-boot-frase" id="ss-boot-frase">Afinando os instrumentos…</p>
+            <div class="ss-boot-progress" aria-hidden="true"><div></div></div>
+            <div class="loading-progress-text"></div>
+            <p class="ss-boot-dica">
+                No primeiro acesso o app é baixado para rodar direto no seu navegador.<br />
+                Nas próximas visitas ele abre bem mais rápido.
+            </p>
+        </div>
+        <noscript>
+            <p class="ss-boot-dica">O ScreenSound precisa de JavaScript habilitado para funcionar.</p>
+        </noscript>
     </div>
 
     <div id="blazor-error-ui">
-        An unhandled error has occurred.
-        <a href="." class="reload">Reload</a>
+        Ocorreu um erro inesperado.
+        <a href="." class="reload">Recarregar</a>
         <span class="dismiss">🗙</span>
     </div>
+
+    <script>
+        // Alterna frases enquanto o Blazor carrega; para sozinho quando o app substitui a tela
+        (function () {
+            var frases = [
+                'Afinando os instrumentos…',
+                'Aquecendo os alto-falantes…',
+                'Tirando os vinis da capa…',
+                'Ajustando o equalizador…',
+                'Montando a sua playlist…',
+                'Quase lá, o show já vai começar!'
+            ];
+            var i = 0;
+            var timer = setInterval(function () {
+                var el = document.getElementById('ss-boot-frase');
+                if (!el) { clearInterval(timer); return; }
+                i = Math.min(i + 1, frases.length - 1);
+                el.classList.remove('troca');
+                void el.offsetWidth;
+                el.textContent = frases[i];
+                el.classList.add('troca');
+            }, 1700);
+        })();
+    </script>
+    <script src="js/screensound.js"></script>
+    <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
     <script src="_framework/blazor.webassembly.js"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
 </body>

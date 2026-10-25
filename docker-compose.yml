@@ -1,6 +1,57 @@
+# Ambiente completo para rodar localmente:  docker compose up --build
+#   Front:   http://localhost:8080
+#   API:     http://localhost:8080/api  (Swagger em http://localhost:5095/swagger)
+#   Banco:   SQL Server 2022 (dados persistidos no volume "sqldata")
+# O banco é criado e populado automaticamente com as contas e o catálogo de demonstração.
+
 services:
-  screensound.api:
-    image: ${DOCKER_REGISTRY-}screensoundapi
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SQL_SA_PASSWORD:-ScreenSound@Local123}"
+    volumes:
+      - sqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  api:
+    image: screensound-api
     build:
       context: .
       dockerfile: ScreenSound.API/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__ScreenSoundDB: "Server=sqlserver,1433;Database=ScreenSound;User Id=sa;Password=${SQL_SA_PASSWORD:-ScreenSound@Local123};TrustServerCertificate=True;MultipleActiveResultSets=True"
+      Banco__AplicarMigracoesAoIniciar: "true"
+      Banco__PopularCatalogoDemo: "true"
+      Cookies__EntreDominios: "false"
+    ports:
+      - "5095:8080"
+    volumes:
+      - fotos:/app/wwwroot/FotosPerfil
+      # Chaves dos cookies de login: sem persistir, todos são deslogados quando o container reinicia
+      - chaves:/home/app/.aspnet/DataProtection-Keys
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    restart: on-failure
+
+  web:
+    image: screensound-web
+    build:
+      context: .
+      dockerfile: ScreenSound.Web/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  sqldata:
+  fotos:
+  chaves:
