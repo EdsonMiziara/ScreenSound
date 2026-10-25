@@ -1,60 +1,103 @@
-﻿@page "/Artistas"
-@inject ArtistaAPI artistaAPI
+@page "/Artistas"
+@inject ArtistaAPI ArtistaAPI
+@inject MusicaAPI MusicaAPI
 
+<PageTitle>Artistas · ScreenSound</PageTitle>
 
-<MudStack Class="mt-4 mb-4" Row="true" Justify="Justify.SpaceBetween">
-	<MudText Class="mb-4" Typo="Typo.h4">Artistas cadastrados</MudText>
-	<MudPagination Count="@totalPaginas" SelectedChanged="PaginaMudou"></MudPagination>
-</MudStack>
+<div class="ss-container ss-pagina">
+    <div class="ss-cab-pagina">
+        <div>
+            <h1 class="ss-titulo-pagina">Artistas</h1>
+            <p class="ss-secao-sub">
+                @if (artistas is not null)
+                {
+                    @Visual.Plural(artistas.Count, "artista cadastrado", "artistas cadastrados")
+                }
+            </p>
+        </div>
+        <SomenteAdmin>
+            <a class="ss-btn ss-btn-primario" href="/CadastrarArtista">
+                <Icone Svg="@Icons.Material.Filled.PersonAdd" /> Novo artista
+            </a>
+        </SomenteAdmin>
+    </div>
 
+    <div class="ss-toolbar">
+        <div class="ss-campo-busca">
+            <Icone Svg="@Icons.Material.Filled.FilterList" />
+            <input class="ss-campo" type="search" placeholder="Filtrar artistas" aria-label="Filtrar artistas"
+                   @bind="filtro" @bind:event="oninput" />
+        </div>
+        <select class="ss-campo" aria-label="Ordenar por" @bind="ordem">
+            <option value="az">Nome (A–Z)</option>
+            <option value="avaliacao">Melhor avaliados</option>
+            <option value="faixas">Mais faixas</option>
+            <option value="recentes">Mais recentes</option>
+        </select>
+    </div>
 
-@if (artistasPorPagina == null)
-{
-	<p>❌ A lista de artistas está nula.</p>
-}
-else if (!artistasPorPagina.Any())
-{
-	<p>⚠️ Nenhum artista encontrado.</p>
-}
-else if (artistasPorPagina is not null)
-{
-	<p>✅ Total de artistas: @artistasPorPagina.Count</p>
-	<MudGrid>
-		@foreach (var artista in artistasPorPagina)
-		{
-			<MudItem xs="3">
-				<CardArtista Artista ="artista" />
-			</MudItem>
-		}
-	</MudGrid>
-}
+    @if (artistas is null)
+    {
+        <div class="ss-grade">
+            @for (var i = 0; i < 10; i++)
+            {
+                <div><div class="ss-skeleton" style="aspect-ratio:1;border-radius:50%"></div></div>
+            }
+        </div>
+    }
+    else if (artistas.Count == 0)
+    {
+        <EstadoVazio Icone="@Icons.Material.Filled.PersonOff" Titulo="Nenhum artista ainda" Texto="Os artistas cadastrados pela administração aparecem aqui.">
+            <SomenteAdmin><a href="/CadastrarArtista" class="ss-btn ss-btn-primario">Novo artista</a></SomenteAdmin>
+        </EstadoVazio>
+    }
+    else if (!Filtrados.Any())
+    {
+        <EstadoVazio Icone="@Icons.Material.Filled.SearchOff" Titulo="Nenhum artista encontrado" Texto="Tente buscar por outro nome." />
+    }
+    else
+    {
+        <div class="ss-grade">
+            @foreach (var artista in Filtrados)
+            {
+                <ArtistaCard @key="artista.Id" Artista="artista" TotalFaixas="@FaixasDo(artista.Id)" />
+            }
+        </div>
+    }
+</div>
 
 @code {
-	private ICollection<ArtistaResponse>? artistas;
-	private ICollection<ArtistaResponse>? artistasPorPagina;
-	private int tamanho = 8;
-	private int totalItens;
-	private int totalPaginas;
+    private List<ArtistaResponse>? artistas;
+    private ICollection<MusicaResponse> musicas = new List<MusicaResponse>();
+    private string? filtro;
+    private string ordem = "az";
 
-	protected override async Task OnInitializedAsync()
-	{
-		artistas = await artistaAPI.GetArtistasAsync();
-		if (artistas is not null)
-		{
-			artistas = artistas.OrderByDescending(a => a.Id).ToList();
-			totalItens = artistas.Count();
-			totalPaginas = Convert.ToInt32(Math.Ceiling((double)totalItens / tamanho));
-			this.PaginaMudou(1);
-		}
+    private IEnumerable<ArtistaResponse> Filtrados
+    {
+        get
+        {
+            var consulta = (artistas ?? new()).AsEnumerable();
+            if (!string.IsNullOrWhiteSpace(filtro))
+            {
+                consulta = consulta.Where(a => Visual.Contem(a.Nome, filtro.Trim()));
+            }
 
-	}
+            return ordem switch
+            {
+                "avaliacao" => consulta.OrderByDescending(a => a.Classificacao ?? 0),
+                "faixas" => consulta.OrderByDescending(a => FaixasDo(a.Id)),
+                "recentes" => consulta.OrderByDescending(a => a.Id),
+                _ => consulta.OrderBy(a => a.Nome, StringComparer.CurrentCultureIgnoreCase)
+            };
+        }
+    }
 
-	private void PaginaMudou(int pageNumber)
-	{
-		var indice = pageNumber - 1;
-		artistasPorPagina = artistas!.Skip(indice * tamanho).Take(tamanho).ToList();
+    protected override async Task OnInitializedAsync()
+    {
+        var tarefaMusicas = MusicaAPI.GetMusicasAsync();
+        artistas = (await ArtistaAPI.GetArtistasAsync())?.ToList() ?? new();
+        musicas = await tarefaMusicas;
+    }
 
-	}
-
-
+    private int FaixasDo(int artistaId) => musicas.Count(m => m.ArtistaId == artistaId);
 }

@@ -1,0 +1,135 @@
+@inject PlaylistAPI PlaylistAPI
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <div class="ss-dialogo-item" style="margin:0 -8px 12px;background:var(--ss-superficie)">
+            <Capa SpotifyUrl="@Musica.SpotifyUrl" Semente="@Musica.Nome" />
+            <div class="ss-linha-textos">
+                <span class="ss-linha-nome">@Musica.Nome</span>
+                <span class="ss-linha-sub">@Musica.NomeArtista</span>
+            </div>
+        </div>
+
+        @if (playlists is null)
+        {
+            @for (var i = 0; i < 3; i++)
+            {
+                <div class="ss-skeleton" style="height:56px;margin-bottom:6px"></div>
+            }
+        }
+        else if (playlists.Count == 0)
+        {
+            <p class="ss-muted" style="font-size:14px;padding:8px 0">Você ainda não tem playlists. Crie a primeira abaixo.</p>
+        }
+        else
+        {
+            <div class="ss-dialogo-lista">
+                @foreach (var playlist in playlists)
+                {
+                    var contem = playlist.Musicas.Any(m => m.Id == Musica.Id);
+                    <div class="ss-dialogo-item" @key="playlist.Id">
+                        <Capa SpotifyUrl="@playlist.Musicas.FirstOrDefault()?.SpotifyUrl" Semente="@playlist.Nome" IconeFallback="@Icons.Material.Filled.QueueMusic" />
+                        <div class="ss-linha-textos">
+                            <span class="ss-linha-nome">@playlist.Nome</span>
+                            <span class="ss-linha-sub">
+                                @Visual.Plural(playlist.TotalMusicas, "faixa", "faixas")
+                                @if (!playlist.Publica) { <text> · Privada</text> }
+                            </span>
+                        </div>
+                        <button class="ss-btn ss-btn-sm @(contem ? "ss-btn-contorno" : "ss-btn-primario")"
+                                disabled="@(processando == playlist.Id)"
+                                @onclick="() => Alternar(playlist, contem)">
+                            <Icone Svg="@(contem ? Icons.Material.Filled.Check : Icons.Material.Filled.Add)" />
+                            @(contem ? "Adicionada" : "Adicionar")
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+
+        <form class="ss-dialogo-nova" @onsubmit="CriarComMusica">
+            <input class="ss-campo" @bind="novaPlaylist" @bind:event="oninput" placeholder="Nome da nova playlist" maxlength="100" />
+            <button type="submit" class="ss-btn ss-btn-contorno" disabled="@(string.IsNullOrWhiteSpace(novaPlaylist) || criando)">
+                <Icone Svg="@Icons.Material.Filled.Add" /> Criar
+            </button>
+        </form>
+    </DialogContent>
+    <DialogActions>
+        <button class="ss-btn ss-btn-branco" @onclick="() => MudDialog.Close(DialogResult.Ok(true))">Concluir</button>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter, EditorRequired] public MusicaResponse Musica { get; set; } = default!;
+
+    private List<PlaylistResponse>? playlists;
+    private int? processando;
+    private string? novaPlaylist;
+    private bool criando;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            playlists = await PlaylistAPI.GetMinhasAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            playlists = new();
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task Alternar(PlaylistResponse playlist, bool contem)
+    {
+        processando = playlist.Id;
+        try
+        {
+            if (contem)
+            {
+                await PlaylistAPI.RemoverMusicaAsync(playlist.Id, Musica.Id);
+                playlist.Musicas.Remove(playlist.Musicas.First(m => m.Id == Musica.Id));
+                Snackbar.Add($"Removida de “{playlist.Nome}”.", Severity.Normal);
+            }
+            else
+            {
+                await PlaylistAPI.AdicionarMusicaAsync(playlist.Id, Musica.Id);
+                playlist.Musicas.Add(Musica);
+                Snackbar.Add($"Adicionada a “{playlist.Nome}”.", Severity.Success);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            processando = null;
+        }
+    }
+
+    private async Task CriarComMusica()
+    {
+        if (string.IsNullOrWhiteSpace(novaPlaylist)) return;
+
+        criando = true;
+        try
+        {
+            var nome = novaPlaylist.Trim();
+            await PlaylistAPI.CriarAsync(new PlaylistRequest(nome, null, true, new List<int> { Musica.Id }));
+            Snackbar.Add($"Playlist “{nome}” criada com a faixa.", Severity.Success);
+            novaPlaylist = null;
+            playlists = await PlaylistAPI.GetMinhasAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            criando = false;
+        }
+    }
+}

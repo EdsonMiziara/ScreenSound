@@ -1,0 +1,313 @@
+@page "/Playlist/{Id:int}"
+@inject PlaylistAPI PlaylistAPI
+@inject MusicaAPI MusicaAPI
+@inject CapaService CapaService
+@inject PlayerService Player
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<PageTitle>@(playlist?.Nome ?? "Playlist") · ScreenSound</PageTitle>
+
+@if (carregando)
+{
+    <div class="ss-container ss-pagina"><SkeletonFaixas Quantidade="2" /></div>
+}
+else if (playlist is null)
+{
+    <div class="ss-container ss-pagina">
+        <EstadoVazio Icone="@Icons.Material.Filled.QueueMusic" Titulo="Playlist não encontrada" Texto="Ela pode ter sido excluída ou ser privada.">
+            <a href="/Playlists" class="ss-btn ss-btn-primario">Ir para a biblioteca</a>
+        </EstadoVazio>
+    </div>
+}
+else
+{
+    <section class="ss-hero">
+        <div class="ss-hero-fundo" style="background:@Visual.Gradiente(playlist.Nome)">
+            @if (capa is not null)
+            {
+                <img src="@capa" alt="" />
+            }
+        </div>
+        <div class="ss-container ss-hero-inner">
+            <div class="ss-hero-esq">
+                <div class="ss-hero-cab">
+                    <BotaoPlay Lista="playlist.Musicas" Tamanho="lg" />
+                    <div class="ss-hero-textos">
+                        <span class="ss-rotulo sub">@(playlist.EhDono ? "Sua playlist" : $"Playlist de {playlist.NomeDono}")</span>
+                        <h1 class="ss-rotulo titulo">@playlist.Nome</h1>
+                    </div>
+                </div>
+                <div class="ss-hero-meta">
+                    <span class="ss-rotulo pequeno">@Visual.Plural(playlist.TotalMusicas, "faixa", "faixas")</span>
+                    <span class="ss-rotulo pequeno">@(playlist.Publica ? "Pública" : "🔒 Privada")</span>
+                    <span class="ss-rotulo pequeno">Criada em @playlist.CriadaEm.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(playlist.Descricao))
+                {
+                    <p class="ss-rotulo pequeno" style="white-space:normal;max-width:560px;line-height:1.5">@playlist.Descricao</p>
+                }
+            </div>
+            <div class="ss-pilha" style="padding-top:12px">
+                <Capa SpotifyUrl="@playlist.Musicas.FirstOrDefault(m => m.Tocavel)?.SpotifyUrl" Semente="@playlist.Nome" IconeFallback="@Icons.Material.Filled.QueueMusic" />
+            </div>
+        </div>
+    </section>
+
+    <div class="ss-container">
+        <div class="ss-barra-acoes">
+            <div class="grupo">
+                <button class="ss-btn ss-btn-primario ss-btn-sm" @onclick="Embaralhar" disabled="@(!playlist.Musicas.Any(m => m.Tocavel))">
+                    <Icone Svg="@Icons.Material.Filled.Shuffle" /> Aleatório
+                </button>
+                <button class="ss-btn ss-btn-contorno ss-btn-sm" @onclick="CopiarLink">
+                    <Icone Svg="@Icons.Material.Filled.Link" /> Copiar link
+                </button>
+                @if (playlist.EhDono)
+                {
+                    <button class="ss-btn ss-btn-contorno ss-btn-sm" @onclick="Editar">
+                        <Icone Svg="@Icons.Material.Filled.Edit" /> Editar
+                    </button>
+                    <button class="ss-btn ss-btn-perigo ss-btn-sm" @onclick="Excluir">
+                        <Icone Svg="@Icons.Material.Filled.DeleteOutline" /> Excluir
+                    </button>
+                }
+            </div>
+            <div class="grupo">
+                @if (playlist.EhDono)
+                {
+                    <button class="ss-btn @(mostrarAdicionar ? "ss-btn-branco" : "ss-btn-contorno") ss-btn-sm" @onclick="() => mostrarAdicionar = !mostrarAdicionar">
+                        <Icone Svg="@Icons.Material.Filled.Add" /> Adicionar faixas
+                    </button>
+                }
+            </div>
+        </div>
+
+        <div style="padding-bottom:64px">
+            @if (mostrarAdicionar && playlist.EhDono)
+            {
+                <section class="ss-secao" style="background:var(--ss-bg-elevado);border:1px solid var(--ss-borda);border-radius:14px;padding:20px">
+                    <div class="ss-secao-cab" style="margin-bottom:12px">
+                        <div>
+                            <h2 class="ss-secao-titulo" style="font-size:18px">Adicionar faixas</h2>
+                            <p class="ss-secao-sub">Busque no catálogo e adicione com um clique</p>
+                        </div>
+                        <button class="ss-btn-icone" aria-label="Fechar" @onclick="() => mostrarAdicionar = false"><Icone Svg="@Icons.Material.Filled.Close" /></button>
+                    </div>
+                    <div class="ss-campo-busca" style="max-width:none;margin-bottom:10px">
+                        <Icone Svg="@Icons.Material.Filled.Search" />
+                        <input class="ss-campo" type="search" placeholder="Nome da faixa, artista ou gênero" @bind="buscaCatalogo" @bind:event="oninput" />
+                    </div>
+                    @foreach (var musica in Sugestoes)
+                    {
+                        <LinhaCompacta @key="musica.Id" Musica="musica">
+                            <Acoes>
+                                <button class="ss-btn ss-btn-contorno ss-btn-sm" disabled="@(processando == musica.Id)" @onclick="() => Adicionar(musica)">
+                                    <Icone Svg="@Icons.Material.Filled.Add" /> Adicionar
+                                </button>
+                            </Acoes>
+                        </LinhaCompacta>
+                    }
+                    @if (!Sugestoes.Any())
+                    {
+                        <p class="ss-muted" style="font-size:14px;padding:8px 10px">Nenhuma faixa encontrada fora desta playlist.</p>
+                    }
+                </section>
+            }
+
+            @if (playlist.Musicas.Count == 0)
+            {
+                <EstadoVazio Icone="@Icons.Material.Filled.PlaylistAdd" Titulo="Esta playlist está vazia"
+                             Texto="@(playlist.EhDono ? "Adicione faixas pelo botão acima ou pelo botão “Playlist” de qualquer faixa." : "O dono ainda não adicionou faixas.")">
+                    @if (playlist.EhDono && !mostrarAdicionar)
+                    {
+                        <button class="ss-btn ss-btn-primario" @onclick="() => mostrarAdicionar = true">Adicionar faixas</button>
+                    }
+                </EstadoVazio>
+            }
+            else
+            {
+                @for (var i = 0; i < musicasOrdenadas.Count; i++)
+                {
+                    var indice = i;
+                    var musica = musicasOrdenadas[i];
+                    <LinhaCompacta @key="musica.Id" Musica="musica" Numero="indice + 1" Contexto="musicasOrdenadas">
+                        <Acoes>
+                            @if (playlist.EhDono)
+                            {
+                                <button class="ss-btn-icone" title="Mover para cima" aria-label="Mover para cima" disabled="@(indice == 0)" @onclick="() => Mover(indice, -1)">
+                                    <Icone Svg="@Icons.Material.Filled.KeyboardArrowUp" />
+                                </button>
+                                <button class="ss-btn-icone" title="Mover para baixo" aria-label="Mover para baixo" disabled="@(indice == musicasOrdenadas.Count - 1)" @onclick="() => Mover(indice, 1)">
+                                    <Icone Svg="@Icons.Material.Filled.KeyboardArrowDown" />
+                                </button>
+                                <button class="ss-btn-icone" title="Remover da playlist" aria-label="Remover da playlist" @onclick="() => Remover(musica)">
+                                    <Icone Svg="@Icons.Material.Filled.RemoveCircleOutline" />
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="ss-btn-icone" title="Adicionar a uma playlist" aria-label="Adicionar a uma playlist" @onclick="() => DialogService.AdicionarAPlaylistAsync(musica)">
+                                    <Icone Svg="@Icons.Material.Filled.PlaylistAdd" />
+                                </button>
+                            }
+                        </Acoes>
+                    </LinhaCompacta>
+                }
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private PlaylistResponse? playlist;
+    private List<MusicaResponse> musicasOrdenadas = new();
+    private List<MusicaResponse>? catalogo;
+    private string? capa;
+    private bool carregando = true;
+    private bool mostrarAdicionar;
+    private string? buscaCatalogo;
+    private int? processando;
+
+    private IEnumerable<MusicaResponse> Sugestoes
+    {
+        get
+        {
+            if (catalogo is null || playlist is null) return Enumerable.Empty<MusicaResponse>();
+
+            var naPlaylist = playlist.Musicas.Select(m => m.Id).ToHashSet();
+            var consulta = catalogo.Where(m => !naPlaylist.Contains(m.Id));
+
+            if (!string.IsNullOrWhiteSpace(buscaCatalogo))
+            {
+                var termo = buscaCatalogo.Trim();
+                consulta = consulta.Where(m =>
+                    Visual.Contem(m.Nome, termo) ||
+                    Visual.Contem(m.NomeArtista, termo) ||
+                    m.Generos.Any(g => Visual.Contem(g.Nome, termo)));
+            }
+
+            return consulta.OrderByDescending(m => m.Tocavel).ThenByDescending(m => m.Id).Take(8);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        carregando = true;
+        await Recarregar();
+        carregando = false;
+
+        if (playlist?.EhDono == true)
+        {
+            catalogo = (await MusicaAPI.GetMusicasAsync()).ToList();
+        }
+    }
+
+    private async Task Recarregar()
+    {
+        try
+        {
+            playlist = await PlaylistAPI.GetPorIdAsync(Id);
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+            playlist = null;
+        }
+
+        musicasOrdenadas = playlist?.Musicas.ToList() ?? new();
+        capa = await CapaService.ObterAsync(musicasOrdenadas.FirstOrDefault(m => m.Tocavel)?.SpotifyUrl);
+    }
+
+    private async Task Adicionar(MusicaResponse musica)
+    {
+        processando = musica.Id;
+        try
+        {
+            await PlaylistAPI.AdicionarMusicaAsync(playlist!.Id, musica.Id);
+            playlist.Musicas.Add(musica);
+            musicasOrdenadas.Add(musica);
+            capa ??= await CapaService.ObterAsync(musica.SpotifyUrl);
+            Snackbar.Add($"“{musica.Nome}” adicionada.", Severity.Success);
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            processando = null;
+        }
+    }
+
+    private async Task Remover(MusicaResponse musica)
+    {
+        try
+        {
+            await PlaylistAPI.RemoverMusicaAsync(playlist!.Id, musica.Id);
+            playlist.Musicas.Remove(playlist.Musicas.First(m => m.Id == musica.Id));
+            musicasOrdenadas.Remove(musica);
+            Snackbar.Add($"“{musica.Nome}” removida da playlist.", Severity.Normal);
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task Mover(int indice, int direcao)
+    {
+        var destino = indice + direcao;
+        if (destino < 0 || destino >= musicasOrdenadas.Count) return;
+
+        // Atualização otimista: troca na tela e desfaz se a API falhar
+        (musicasOrdenadas[indice], musicasOrdenadas[destino]) = (musicasOrdenadas[destino], musicasOrdenadas[indice]);
+
+        try
+        {
+            await PlaylistAPI.ReordenarAsync(playlist!.Id, musicasOrdenadas.Select(m => m.Id));
+        }
+        catch (HttpRequestException ex)
+        {
+            (musicasOrdenadas[indice], musicasOrdenadas[destino]) = (musicasOrdenadas[destino], musicasOrdenadas[indice]);
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private Task Embaralhar() => Player.TocarListaAsync(musicasOrdenadas, embaralhar: true);
+
+    private async Task Editar()
+    {
+        if (await DialogService.FormularioPlaylistAsync(playlist) is not null)
+        {
+            await Recarregar();
+        }
+    }
+
+    private async Task Excluir()
+    {
+        if (!await DialogService.ConfirmarAsync("Excluir playlist", $"Tem certeza que deseja excluir “{playlist!.Nome}”? As faixas continuam no catálogo."))
+            return;
+
+        try
+        {
+            await PlaylistAPI.ExcluirAsync(playlist.Id);
+            Snackbar.Add("Playlist excluída.", Severity.Success);
+            Navigation.NavigateTo("/Playlists");
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task CopiarLink()
+    {
+        var copiou = await JS.InvokeAsync<bool>("ssUi.copiar", Navigation.Uri);
+        Snackbar.Add(copiou ? "Link copiado!" : "Não foi possível copiar o link.", copiou ? Severity.Success : Severity.Warning);
+    }
+}

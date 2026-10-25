@@ -1,0 +1,7 @@
+@* Renderiza um ícone do MudBlazor (string SVG) como <svg> puro, herdando a cor do texto *@
+<svg class="@Class" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">@((MarkupString)Svg)</svg>
+
+@code {
+    [Parameter, EditorRequired] public string Svg { get; set; } = string.Empty;
+    [Parameter] public string? Class { get; set; }
+}

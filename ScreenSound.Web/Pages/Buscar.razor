@@ -1,0 +1,174 @@
+@page "/Buscar"
+@inject MusicaAPI MusicaAPI
+@inject ArtistaAPI ArtistaAPI
+@inject PlaylistAPI PlaylistAPI
+
+<PageTitle>@(string.IsNullOrWhiteSpace(Q) ? "Buscar" : $"“{Q}”") · ScreenSound</PageTitle>
+
+<div class="ss-container ss-pagina">
+    <div class="ss-cab-pagina">
+        <div>
+            <p class="ss-secao-sub" style="margin:0 0 4px">Resultados da busca</p>
+            <h1 class="ss-titulo-pagina">@(string.IsNullOrWhiteSpace(Q) ? "Buscar" : $"“{Q}”")</h1>
+        </div>
+    </div>
+
+    @if (carregando)
+    {
+        <SkeletonFaixas Quantidade="3" />
+    }
+    else if (string.IsNullOrWhiteSpace(Q))
+    {
+        <EstadoVazio Icone="@Icons.Material.Filled.Search" Titulo="O que você quer ouvir?" Texto="Use a barra de busca no topo para encontrar artistas, faixas, playlists e gêneros." />
+    }
+    else
+    {
+        <div class="ss-abas" role="tablist">
+            @foreach (var (chave, rotulo, total) in Abas)
+            {
+                <button class="ss-aba @(aba == chave ? "ativa" : null)" role="tab" aria-selected="@(aba == chave)" @onclick="() => aba = chave">
+                    @rotulo @if (total is int t) { <span class="contador">@t</span> }
+                </button>
+            }
+        </div>
+
+        @if (faixas.Count + artistas.Count + playlists.Count == 0)
+        {
+            <EstadoVazio Icone="@Icons.Material.Filled.SearchOff" Titulo="Nada encontrado" Texto="@($"Não encontramos resultados para “{Q}”. Confira a ortografia ou tente termos mais gerais.")" />
+        }
+        else
+        {
+            @if ((aba == "tudo" || aba == "artistas") && artistas.Count > 0)
+            {
+                <section class="ss-secao">
+                    @if (aba == "tudo")
+                    {
+                        <div class="ss-secao-cab"><h2 class="ss-secao-titulo">Artistas</h2></div>
+                    }
+                    <div class="@(aba == "tudo" ? "ss-carrossel" : "ss-grade")">
+                        @foreach (var artista in artistas)
+                        {
+                            <ArtistaCard @key="artista.Id" Artista="artista" TotalFaixas="@todasMusicas.Count(m => m.ArtistaId == artista.Id)" />
+                        }
+                    </div>
+                </section>
+            }
+
+            @if ((aba == "tudo" || aba == "faixas") && faixas.Count > 0)
+            {
+                <section class="ss-secao">
+                    @if (aba == "tudo")
+                    {
+                        <div class="ss-secao-cab">
+                            <h2 class="ss-secao-titulo">Faixas</h2>
+                            @if (faixas.Count > 5)
+                            {
+                                <button class="ss-link" style="background:none;border:none;cursor:pointer" @onclick='() => aba = "faixas"'>Ver todas (@faixas.Count)</button>
+                            }
+                        </div>
+                    }
+                    @foreach (var musica in aba == "tudo" ? faixas.Take(5) : faixas)
+                    {
+                        <FaixaLinha @key="musica.Id" Musica="musica" Contexto="faixas" />
+                    }
+                </section>
+            }
+
+            @if ((aba == "tudo" || aba == "playlists") && playlists.Count > 0)
+            {
+                <section class="ss-secao">
+                    @if (aba == "tudo")
+                    {
+                        <div class="ss-secao-cab"><h2 class="ss-secao-titulo">Playlists</h2></div>
+                    }
+                    <div class="ss-grade">
+                        @foreach (var playlist in playlists)
+                        {
+                            <PlaylistCard @key="playlist.Id" Playlist="playlist" MostrarDono="!playlist.EhDono" />
+                        }
+                    </div>
+                </section>
+            }
+        }
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public string? Q { get; set; }
+
+    private bool carregando = true;
+    private string aba = "tudo";
+    private List<MusicaResponse> todasMusicas = new();
+    private List<ArtistaResponse> todosArtistas = new();
+    private List<PlaylistResponse> todasPlaylists = new();
+    private List<MusicaResponse> faixas = new();
+    private List<ArtistaResponse> artistas = new();
+    private List<PlaylistResponse> playlists = new();
+    private bool catalogoCarregado;
+
+    private IEnumerable<(string Chave, string Rotulo, int? Total)> Abas => new (string, string, int?)[]
+    {
+        ("tudo", "Tudo", null),
+        ("faixas", "Faixas", faixas.Count),
+        ("artistas", "Artistas", artistas.Count),
+        ("playlists", "Playlists", playlists.Count)
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!catalogoCarregado)
+        {
+            carregando = true;
+            var tarefaMusicas = MusicaAPI.GetMusicasAsync();
+            var tarefaArtistas = ArtistaAPI.GetArtistasAsync();
+            var tarefaPlaylists = CarregarPlaylistsAsync();
+
+            todasMusicas = (await tarefaMusicas).ToList();
+            todosArtistas = (await tarefaArtistas)?.ToList() ?? new();
+            todasPlaylists = await tarefaPlaylists;
+            catalogoCarregado = true;
+            carregando = false;
+        }
+
+        aba = "tudo";
+        Filtrar();
+    }
+
+    private async Task<List<PlaylistResponse>> CarregarPlaylistsAsync()
+    {
+        try
+        {
+            var publicas = PlaylistAPI.GetPublicasAsync();
+            var minhas = await PlaylistAPI.GetMinhasAsync();
+            return minhas.Concat(await publicas).DistinctBy(p => p.Id).ToList();
+        }
+        catch (HttpRequestException)
+        {
+            return new();
+        }
+    }
+
+    private void Filtrar()
+    {
+        var termo = Q?.Trim() ?? string.Empty;
+        if (termo.Length == 0)
+        {
+            faixas = new();
+            artistas = new();
+            playlists = new();
+            return;
+        }
+
+        faixas = todasMusicas
+            .Where(m => Visual.Contem(m.Nome, termo) || Visual.Contem(m.NomeArtista, termo) || m.Generos.Any(g => Visual.Contem(g.Nome, termo)))
+            .OrderByDescending(m => Visual.Contem(m.Nome, termo))
+            .ThenByDescending(m => m.Classificacao ?? 0)
+            .ToList();
+
+        artistas = todosArtistas.Where(a => Visual.Contem(a.Nome, termo)).ToList();
+
+        playlists = todasPlaylists
+            .Where(p => Visual.Contem(p.Nome, termo) || Visual.Contem(p.Descricao, termo))
+            .ToList();
+    }
+}

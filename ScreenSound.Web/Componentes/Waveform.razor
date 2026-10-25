@@ -1,0 +1,71 @@
+@implements IDisposable
+@inject PlayerService Player
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+
+<div class="ss-wave @Class" @ref="elemento" @onclick="Clicar" title="@(EhAtual ? "Clique para avançar" : "Clique para tocar")">
+    <div class="ss-wave-camada base">@svg</div>
+    <div class="ss-wave-camada progresso" style="clip-path: inset(0 @Visual.Porcentagem(1 - Progresso) 0 0)">@svg</div>
+    @if (MostrarTempo && EhAtual && Player.Duracao > 0)
+    {
+        <span class="ss-wave-tempo inicio">@Visual.FormatarTempo(Player.Posicao)</span>
+        <span class="ss-wave-tempo fim">@Visual.FormatarTempo(Player.Duracao)</span>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public MusicaResponse Musica { get; set; } = default!;
+    [Parameter] public IEnumerable<MusicaResponse>? Contexto { get; set; }
+    [Parameter] public int Barras { get; set; } = 140;
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public bool MostrarTempo { get; set; }
+
+    /// <summary>Waveform apenas decorativa (sem clique / progresso), usada na landing page.</summary>
+    [Parameter] public bool Decorativa { get; set; }
+
+    private ElementReference elemento;
+    private MarkupString svg;
+    private bool eraAtual;
+
+    private bool EhAtual => !Decorativa && Player.Atual?.Id == Musica.Id;
+    private double Progresso => EhAtual ? Player.Progresso : 0;
+
+    protected override void OnInitialized()
+    {
+        Player.OnProgresso += AoProgredir;
+        Player.OnMudanca += AoProgredir;
+    }
+
+    protected override void OnParametersSet()
+    {
+        svg = (MarkupString)Visual.Waveform(Musica.Id, Barras);
+    }
+
+    private void AoProgredir()
+    {
+        var atual = EhAtual;
+        if (atual || eraAtual) InvokeAsync(StateHasChanged);
+        eraAtual = atual;
+    }
+
+    private async Task Clicar(MouseEventArgs e)
+    {
+        if (Decorativa) return;
+
+        if (EhAtual)
+        {
+            var fracao = await JS.InvokeAsync<double>("ssUi.fracao", elemento, e.ClientX);
+            await Player.BuscarAsync(fracao);
+        }
+        else if (!await Player.TocarAsync(Musica, Contexto))
+        {
+            Snackbar.Add("Esta faixa ainda não tem um link do Spotify.", Severity.Info);
+        }
+    }
+
+    public void Dispose()
+    {
+        Player.OnProgresso -= AoProgredir;
+        Player.OnMudanca -= AoProgredir;
+    }
+}

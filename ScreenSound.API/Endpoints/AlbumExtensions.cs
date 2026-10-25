@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore; // Necessário para .ToListAsync() e .Inclu
 using ScreenSound.API.Request;
 using ScreenSound.API.Requests;
 using ScreenSound.API.Response;
+using ScreenSound.API.Seguranca;
 using ScreenSound.Banco;
 using ScreenSound.Modelos;
 using ScreenSound.Shared.Data.Banco; // Necessário para IUnitOfWork
@@ -73,7 +74,7 @@ public static class AlbumExtensions
             await uow.CommitAsync(); 
 
             return Results.Created();
-        });
+        }).RequireAuthorization(Politicas.Admin);
 
         grupo.MapPut("/", async (
             [FromServices] IUnitOfWork uow,
@@ -97,7 +98,7 @@ public static class AlbumExtensions
             await uow.CommitAsync(); 
 
             return Results.Ok();
-        });
+        }).RequireAuthorization(Politicas.Admin);
 
         grupo.MapDelete("/{Id}", async (
             [FromServices] IUnitOfWork uow,
@@ -111,7 +112,7 @@ public static class AlbumExtensions
             await uow.CommitAsync(); 
 
             return Results.NoContent();
-        });
+        }).RequireAuthorization(Politicas.Admin);
 
         grupo.MapPost("/Avaliacao/{AlbumId}", async (
             HttpContext context,

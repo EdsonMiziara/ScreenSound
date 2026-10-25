@@ -1,0 +1,152 @@
+@inject ArtistaAPI ArtistaAPI
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<div class="ss-cab-pagina">
+    <div>
+        <h1 class="ss-titulo-pagina">@(EhEdicao ? "Editar artista" : "Novo artista")</h1>
+        <p class="ss-secao-sub">@(EhEdicao ? "Atualize o nome e a biografia do artista." : "Cadastre um artista para poder enviar faixas dele.")</p>
+    </div>
+</div>
+
+<div class="ss-form-card">
+    <div class="ss-form-previa">
+        <Avatar Nome="@(string.IsNullOrWhiteSpace(nome) ? "Novo Artista" : nome)" Foto="@(previaFoto ?? Artista?.FotoPerfil)" />
+        @if (!EhEdicao)
+        {
+            <label class="ss-upload" for="upload-foto">
+                <Icone Svg="@Icons.Material.Filled.PhotoCamera" />
+                @(previaFoto is null ? "Escolher foto" : "Trocar foto")
+            </label>
+            <InputFile id="upload-foto" class="ss-sr" accept="image/jpeg,image/png,image/webp" OnChange="SelecionarFoto" />
+            <p class="ss-form-previa-legenda">JPG, PNG ou WEBP. A imagem é redimensionada para 400×400.</p>
+        }
+        else
+        {
+            <p class="ss-form-previa-legenda">A foto é definida no cadastro do artista.</p>
+        }
+    </div>
+
+    <MudForm @ref="form" Class="ss-form-campos">
+        <MudTextField T="string" Label="Nome do artista" @bind-Value="nome" Variant="Variant.Outlined"
+                      Required="true" RequiredError="Informe o nome do artista." Immediate="true" MaxLength="200" />
+
+        <MudTextField T="string" Label="Biografia" @bind-Value="biografia" Variant="Variant.Outlined" Lines="6"
+                      Required="true" RequiredError="Escreva uma breve biografia." MaxLength="2000" Counter="2000" Immediate="true" />
+
+        <div class="ss-form-acoes">
+            <div class="grupo">
+                @if (EhEdicao)
+                {
+                    <button type="button" class="ss-btn ss-btn-perigo" @onclick="Excluir" disabled="@salvando">
+                        <Icone Svg="@Icons.Material.Filled.DeleteOutline" /> Excluir artista
+                    </button>
+                }
+            </div>
+            <div class="grupo">
+                <button type="button" class="ss-btn ss-btn-fantasma" @onclick="Voltar">Cancelar</button>
+                <button type="button" class="ss-btn ss-btn-primario" @onclick="Salvar" disabled="@salvando">
+                    @(salvando ? "Salvando..." : EhEdicao ? "Salvar alterações" : "Cadastrar artista")
+                </button>
+            </div>
+        </div>
+    </MudForm>
+</div>
+
+@code {
+    /// <summary>Artista em edição; nulo no cadastro.</summary>
+    [Parameter] public ArtistaResponse? Artista { get; set; }
+
+    private bool EhEdicao => Artista is not null;
+
+    private MudForm? form;
+    private bool salvando;
+    private string? nome;
+    private string? biografia;
+    private string? previaFoto;
+    private string? fotoBase64;
+
+    protected override void OnParametersSet()
+    {
+        if (Artista is null) return;
+        nome = Artista.Nome;
+        biografia = Artista.Bio;
+    }
+
+    private async Task SelecionarFoto(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            const string formato = "image/jpeg";
+            var redimensionada = await e.File.RequestImageFileAsync(formato, 400, 400);
+
+            await using var stream = redimensionada.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024);
+            using var memoria = new MemoryStream();
+            await stream.CopyToAsync(memoria);
+
+            fotoBase64 = Convert.ToBase64String(memoria.ToArray());
+            previaFoto = $"data:{formato};base64,{fotoBase64}";
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Não foi possível ler a imagem. Tente um arquivo menor (até 2 MB).", Severity.Warning);
+        }
+    }
+
+    private async Task Salvar()
+    {
+        if (form is not null)
+        {
+            await form.Validate();
+            if (!form.IsValid) return;
+        }
+
+        salvando = true;
+        try
+        {
+            var nomeFinal = nome!.Trim();
+
+            if (Artista is null)
+            {
+                await ArtistaAPI.AddArtistaAsync(new ArtistaRequest(nomeFinal, biografia!.Trim(), fotoBase64));
+                Snackbar.Add("Artista cadastrado!", Severity.Success);
+            }
+            else
+            {
+                await ArtistaAPI.UpdateArtistaAsync(new ArtistaRequestEdit(Artista.Id, nomeFinal, biografia!.Trim(), Artista.FotoPerfil));
+                Snackbar.Add("Artista atualizado!", Severity.Success);
+            }
+
+            Navigation.NavigateTo(Rotas.Artista(nomeFinal));
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+
+    private async Task Excluir()
+    {
+        if (Artista is null) return;
+        if (!await DialogService.ConfirmarAsync("Excluir artista", $"Tem certeza que deseja excluir “{Artista.Nome}”? Essa ação não pode ser desfeita."))
+            return;
+
+        try
+        {
+            await ArtistaAPI.DeleteArtistaAsync(Artista.Id);
+            Snackbar.Add("Artista excluído.", Severity.Success);
+            Navigation.NavigateTo("/Artistas");
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private void Voltar() => Navigation.NavigateTo(Artista is null ? "/Artistas" : Rotas.Artista(Artista.Nome));
+}

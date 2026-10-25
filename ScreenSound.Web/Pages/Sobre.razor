@@ -1,0 +1,159 @@
+@page "/Sobre"
+@attribute [AllowAnonymous]
+
+<PageTitle>Sobre o projeto · ScreenSound</PageTitle>
+
+<section class="ss-sobre-hero">
+    <div class="ss-container">
+        <span class="ss-landing-selo"><i></i> Projeto de portfólio · full stack .NET</span>
+        <h1 class="ss-landing-titulo" style="font-size:clamp(34px,5vw,52px)">Sobre o <span>ScreenSound</span></h1>
+        <p class="ss-landing-sub">
+            O ScreenSound é uma plataforma de descoberta musical inspirada no SoundCloud. Dá para explorar um catálogo de artistas e faixas,
+            ouvir direto no navegador pelo player integrado ao Spotify, avaliar o que você ouve e organizar tudo em playlists públicas ou privadas.
+            O projeto foi construído de ponta a ponta em .NET: do banco de dados na nuvem à interface em Blazor WebAssembly.
+        </p>
+        <div class="ss-landing-ctas">
+            <a href="/login?demo=ouvinte" class="ss-btn ss-btn-primario ss-btn-lg"><Icone Svg="@Icons.Material.Filled.PlayArrow" /> Testar agora</a>
+            <a href="https://github.com/EdsonMiziara/ScreenSound" target="_blank" rel="noopener" class="ss-btn ss-btn-contorno ss-btn-lg">
+                <Icone Svg="@Icons.Material.Filled.Code" /> Código no GitHub
+            </a>
+        </div>
+    </div>
+</section>
+
+<div class="ss-container ss-pagina">
+    <section class="ss-secao">
+        <div class="ss-secao-cab">
+            <div>
+                <h2 class="ss-secao-titulo">O que dá para fazer</h2>
+                <p class="ss-secao-sub">Dois perfis de acesso, com permissões verificadas na API</p>
+            </div>
+        </div>
+        <div class="ss-recursos" style="grid-template-columns:repeat(2,1fr)">
+            <div class="ss-recurso">
+                <div class="ss-recurso-icone"><Icone Svg="@Icons.Material.Filled.Headphones" /></div>
+                <h3>Ouvinte</h3>
+                <ul class="ss-lista">
+                    <li>Explora faixas e artistas com busca, filtros por gênero e ordenação</li>
+                    <li>Ouve pelo player contínuo, com fila, que acompanha a navegação</li>
+                    <li>Cria playlists públicas ou privadas e reordena as faixas</li>
+                    <li>Avalia faixas e artistas de 1 a 5 estrelas</li>
+                    <li>Edita o perfil: nome, bio, foto e senha</li>
+                    <li>Conecta o Spotify Premium para ouvir faixas completas, com volume</li>
+                </ul>
+            </div>
+            <div class="ss-recurso">
+                <div class="ss-recurso-icone"><Icone Svg="@Icons.Material.Filled.AdminPanelSettings" /></div>
+                <h3>Administrador</h3>
+                <ul class="ss-lista">
+                    <li>Tudo o que o ouvinte faz</li>
+                    <li>Cadastra, edita e exclui artistas (com foto) e faixas</li>
+                    <li>Vincula faixas ao Spotify com validação do link e prévia da capa</li>
+                    <li>Cria gêneros dinamicamente durante o cadastro</li>
+                    <li>Promove e rebaixa usuários na tela de permissões</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section class="ss-secao">
+        <div class="ss-secao-cab">
+            <div>
+                <h2 class="ss-secao-titulo">Arquitetura</h2>
+                <p class="ss-secao-sub">Front-end e API separados, publicados no Azure</p>
+            </div>
+        </div>
+        <div class="ss-arquitetura">
+            <div class="ss-arq-bloco">
+                <span class="ss-arq-rotulo">Navegador</span>
+                <strong>Blazor WebAssembly</strong>
+                <small>MudBlazor · componentes reutilizáveis · JS interop</small>
+            </div>
+            <div class="ss-arq-seta"><span>HTTPS · cookies de autenticação · CORS</span></div>
+            <div class="ss-arq-bloco destaque">
+                <span class="ss-arq-rotulo">Azure App Service</span>
+                <strong>ASP.NET Core Minimal API</strong>
+                <small>Identity com perfis · políticas de autorização · Swagger</small>
+            </div>
+            <div class="ss-arq-seta"><span>Entity Framework Core · migrations</span></div>
+            <div class="ss-arq-bloco">
+                <span class="ss-arq-rotulo">Azure</span>
+                <strong>Azure SQL Database</strong>
+                <small>Catálogo, avaliações, playlists e usuários</small>
+            </div>
+        </div>
+        <div class="ss-arq-externo">
+            <Icone Svg="@Icons.Material.Filled.GraphicEq" />
+            <span><strong>Spotify</strong> — oEmbed para as capas, iFrame API para o player público e Web Playback SDK (OAuth com PKCE) para assinantes Premium.</span>
+        </div>
+    </section>
+
+    <section class="ss-secao">
+        <div class="ss-secao-cab">
+            <div>
+                <h2 class="ss-secao-titulo">Decisões técnicas</h2>
+                <p class="ss-secao-sub">O que foi aplicado na prática</p>
+            </div>
+        </div>
+        <div class="ss-decisoes">
+            @foreach (var (titulo, texto) in decisoes)
+            {
+                <div class="ss-decisao">
+                    <h3>@titulo</h3>
+                    <p>@texto</p>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="ss-secao">
+        <div class="ss-secao-cab" style="justify-content:center;text-align:center">
+            <div><h2 class="ss-secao-titulo">Tecnologias</h2></div>
+        </div>
+        <div class="ss-stack-faixa">
+            @foreach (var (nome, cor) in stack)
+            {
+                <span class="ss-stack-item"><i style="background:@cor"></i>@nome</span>
+            }
+        </div>
+    </section>
+
+    <section class="ss-cta-final">
+        <h2>Veja funcionando</h2>
+        <p>Entre com uma das contas de demonstração, sem precisar se cadastrar.</p>
+        <div class="ss-landing-ctas" style="justify-content:center">
+            <a href="/login?demo=ouvinte" class="ss-btn ss-btn-primario ss-btn-lg">Demo ouvinte</a>
+            <a href="/login?demo=admin" class="ss-btn ss-btn-contorno ss-btn-lg">Demo admin</a>
+        </div>
+        <p class="ss-dica" style="margin-top:18px">
+            Desenvolvido por <a class="ss-link-laranja" href="https://github.com/EdsonMiziara" target="_blank" rel="noopener">EdsonMiziara</a>
+        </p>
+    </section>
+</div>
+
+@code {
+    private readonly (string Titulo, string Texto)[] decisoes =
+    {
+        ("Minimal APIs organizadas", "Endpoints agrupados por recurso, com CORS e autorização aplicados no grupo e a política de administrador nas rotas de escrita do catálogo."),
+        ("Autenticação e perfis", "ASP.NET Identity com cookies seguros entre domínios. Os perfis viram claims, usados tanto pela API quanto para adaptar a interface."),
+        ("Acesso a dados", "Entity Framework Core com repositório genérico assíncrono e Unit of Work, consultas sem rastreamento para leitura e migrations versionadas."),
+        ("Regras no domínio", "Entidades com validação própria (nome, link do Spotify, ordem das faixas na playlist), cobertas por testes unitários."),
+        ("Integração com terceiros", "Player com dois motores sobre a mesma fila: embed público para todos e Web Playback SDK para Premium, com login OAuth PKCE sem expor segredos."),
+        ("Qualidade e entrega", "Testes unitários com xUnit, testes de integração com Testcontainers (SQL Server em Docker) e deploy contínuo no Azure via GitHub Actions.")
+    };
+
+    private readonly (string Nome, string Cor)[] stack =
+    {
+        (".NET 9 / C#", "#8b5cf6"),
+        ("ASP.NET Core Minimal APIs", "#a78bfa"),
+        ("Blazor WebAssembly", "#6d28d9"),
+        ("Entity Framework Core", "#3b82f6"),
+        ("Azure SQL", "#ef4444"),
+        ("ASP.NET Identity", "#f59e0b"),
+        ("MudBlazor", "#22c55e"),
+        ("Spotify Web API / SDK", "#1ed760"),
+        ("xUnit + Testcontainers", "#ec4899"),
+        ("Docker", "#0ea5e9"),
+        ("GitHub Actions + Azure App Service", "#ff5500")
+    };
+}

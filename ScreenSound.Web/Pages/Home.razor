@@ -1,7 +1,13 @@
 ﻿@page "/"
 @attribute [AllowAnonymous]
 
-<PageTitle>Home</PageTitle>
+<PageTitle>ScreenSound · Descubra e organize suas músicas</PageTitle>
 
-<h1>Ola!</h1>
-<p>Bem-vindo ao nosso site!</p>
+<AuthorizeView>
+    <Authorized>
+        <Descobrir />
+    </Authorized>
+    <NotAuthorized>
+        <Landing />
+    </NotAuthorized>
+</AuthorizeView>

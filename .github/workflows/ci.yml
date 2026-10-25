@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build-e-testes:
+    name: Build e testes (.NET 9)
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+
+    - name: Configurar ambiente .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Testes unitários
+      run: dotnet test ScreenSound.Teste/ScreenSound.Teste.csproj -c Release --logger "console;verbosity=normal"
+
+    - name: Testes de integração (SQL Server via Testcontainers)
+      run: dotnet test ScreenSound.Teste.Integracao/ScreenSound.Teste.Integracao.csproj -c Release --logger "console;verbosity=normal"
+
+    - name: Build da API
+      run: dotnet build ScreenSound.API/ScreenSound.API.csproj -c Release
+
+    - name: Build do front (Blazor WebAssembly)
+      run: dotnet build ScreenSound.Web/ScreenSound.Web.csproj -c Release
+
+  docker:
+    name: Imagens Docker
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+
+    - name: Build das imagens (API e Web)
+      run: docker compose build

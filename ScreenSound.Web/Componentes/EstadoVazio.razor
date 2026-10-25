@@ -1,0 +1,16 @@
+<div class="ss-vazio">
+    <div class="ss-vazio-icone"><Icone Svg="@Icone" /></div>
+    <h3>@Titulo</h3>
+    @if (!string.IsNullOrEmpty(Texto))
+    {
+        <p>@Texto</p>
+    }
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public string Icone { get; set; } = Icons.Material.Filled.MusicOff;
+    [Parameter] public string Titulo { get; set; } = string.Empty;
+    [Parameter] public string? Texto { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

@@ -1,38 +1,98 @@
-﻿@inherits LayoutComponentBase
-<MudThemeProvider IsDarkMode="true" Theme="currentTheme"/>
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject PlayerService Player
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<MudThemeProvider IsDarkMode="true" Theme="tema" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 <MudPopoverProvider />
 
-<MudLayout>
-	<MudAppBar Color="Color.Surface" Fixed="true" Elevation="2"><MudImage Src ="images/screensound-logo.png"></MudImage>
-        <AuthorizeView>
-            <Authorized>
-                <MudAvatar Color="Color.Default">
-                    <MudIcon Icon="@Icons.Material.Filled.Person"></MudIcon>
-                </MudAvatar>
-                <MudButton Class="ml-4" Href="logout"
-                           Variant="Variant.Outlined"
-                           Color="Color.Default">Logout</MudButton>
-            </Authorized>
-            <NotAuthorized>
-                <MudButton Class="ml-4" Href="login"
-                           Variant="Variant.Outlined"
-                           Color="Color.Default">Login</MudButton>
-            </NotAuthorized>
-        </AuthorizeView>
-		</MudAppBar>
-	<MudDrawer Open="true" ClipMode="DrawerClipMode.Always" Elevation="2">
-		<NavMenu></NavMenu>
-	</MudDrawer>
-	<MudMainContent class="main-content pa-10">
-		@Body
-	</MudMainContent>
-</MudLayout>
+<div class="ss-app @(Player.Atual is not null ? "com-player" : null)">
+    <Cabecalho />
+    <main class="ss-main">
+        <ErrorBoundary @ref="errorBoundary">
+            <ChildContent>@Body</ChildContent>
+            <ErrorContent>
+                <div class="ss-container ss-pagina">
+                    <EstadoVazio Icone="@Icons.Material.Filled.ErrorOutline" Titulo="Algo deu errado" Texto="Não foi possível exibir esta página. Tente novamente em instantes.">
+                        <a href="/" class="ss-btn ss-btn-primario">Voltar ao início</a>
+                    </EstadoVazio>
+                </div>
+            </ErrorContent>
+        </ErrorBoundary>
+    </main>
+    <PlayerBar />
+</div>
 
 @code {
-	private MudTheme currentTheme = new MudTheme()
-		{
-			PaletteDark = ScreendsoundPallete.CreatePallete
-		};
+    private ErrorBoundary? errorBoundary;
+
+    private readonly MudTheme tema = new()
+    {
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#ff5500",
+            Secondary = "#ffffff",
+            Background = "#121212",
+            Surface = "#1e1e1e",
+            DrawerBackground = "#121212",
+            AppbarBackground = "#121212",
+            TextPrimary = "#ffffff",
+            TextSecondary = "#b3b3b3",
+            LinesInputs = "#3d3d3d",
+            Divider = "#2c2c2c",
+            ActionDefault = "#b3b3b3",
+            Success = "#1ed760",
+            Error = "#ff4d4f",
+            Info = "#3d9bff"
+        },
+        Typography = new Typography
+        {
+            Default = new DefaultTypography
+            {
+                FontFamily = new[] { "Inter", "Helvetica Neue", "Helvetica", "Arial", "sans-serif" }
+            }
+        },
+        LayoutProperties = new LayoutProperties
+        {
+            DefaultBorderRadius = "8px"
+        }
+    };
+
+    protected override void OnInitialized()
+    {
+        Player.OnMudanca += AoMudarPlayer;
+        Navigation.LocationChanged += AoNavegar;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await Player.CarregarHistoricoAsync();
+        await Player.InicializarSpotifyAsync();
+    }
+
+    protected override void OnParametersSet() => errorBoundary?.Recover();
+
+    private void AoMudarPlayer() => InvokeAsync(StateHasChanged);
+
+    private async void AoNavegar(object? sender, LocationChangedEventArgs e)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("ssUi.topo");
+        }
+        catch (JSException)
+        {
+        }
+    }
+
+    public void Dispose()
+    {
+        Player.OnMudanca -= AoMudarPlayer;
+        Navigation.LocationChanged -= AoNavegar;
+    }
 }

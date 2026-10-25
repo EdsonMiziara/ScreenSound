@@ -2,4 +2,4 @@
 
 namespace ScreenSound.Web.Requests;
 
-public record MusicaRequest([Required] string nome, [Required] int ArtistaId, int anoLancamento, ICollection<GeneroRequest>? Generos);
+public record MusicaRequest([Required] string nome, [Required] int ArtistaId, int AnoLancamento, ICollection<GeneroRequest>? Generos, string? SpotifyUrl = null);

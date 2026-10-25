@@ -1,0 +1,204 @@
+@page "/Artista/{NomeArtista}"
+@inject ArtistaAPI ArtistaAPI
+@inject MusicaAPI MusicaAPI
+@inject PlayerService Player
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+@inject IConfiguration Configuration
+@inject CapaService CapaService
+@inject ISnackbar Snackbar
+
+<PageTitle>@(artista?.Nome ?? "Artista") · ScreenSound</PageTitle>
+
+@if (carregando)
+{
+    <div class="ss-banner ss-skeleton" style="border-radius:0"></div>
+}
+else if (artista is null)
+{
+    <div class="ss-container ss-pagina">
+        <EstadoVazio Icone="@Icons.Material.Filled.PersonOff" Titulo="Artista não encontrado" Texto="Ele pode ter sido removido ou renomeado.">
+            <a href="/Artistas" class="ss-btn ss-btn-primario">Ver artistas</a>
+        </EstadoVazio>
+    </div>
+}
+else
+{
+    <section class="ss-banner ss-hero" style="padding:0">
+        <div class="ss-hero-fundo" style="background:@Visual.Gradiente(artista.Nome, 120)">
+            @if ((Visual.FotoArtista(artista.FotoPerfil, Configuration["APIServer:Url"]) ?? capaBanner) is { } fundo)
+            {
+                <img src="@fundo" alt="" />
+            }
+        </div>
+        <div class="ss-container ss-perfil-cab">
+            <Avatar Nome="@artista.Nome" Foto="@artista.FotoPerfil" />
+            <div class="ss-perfil-textos">
+                <h1 class="ss-rotulo titulo">@artista.Nome</h1>
+                <span class="ss-rotulo sub">@Visual.Plural(faixas.Count, "faixa", "faixas")</span>
+                @if (media > 0)
+                {
+                    <span class="ss-rotulo pequeno">★ @media.ToString("0.0", CultureInfo.InvariantCulture) de média</span>
+                }
+            </div>
+        </div>
+    </section>
+
+    <div class="ss-container">
+        <div class="ss-barra-acoes">
+            <div class="grupo">
+                <button class="ss-btn ss-btn-primario" @onclick="TocarTudo" disabled="@(!faixas.Any(f => f.Tocavel))">
+                    <Icone Svg="@Icons.Material.Filled.PlayArrow" /> Tocar
+                </button>
+                <button class="ss-btn ss-btn-contorno ss-btn-sm" @onclick="Embaralhar" disabled="@(!faixas.Any(f => f.Tocavel))">
+                    <Icone Svg="@Icons.Material.Filled.Shuffle" /> Aleatório
+                </button>
+                <SomenteAdmin>
+                    <a class="ss-btn ss-btn-contorno ss-btn-sm" href="@Rotas.EditarArtista(artista.Nome)">
+                        <Icone Svg="@Icons.Material.Filled.Edit" /> Editar
+                    </a>
+                    <button class="ss-btn ss-btn-perigo ss-btn-sm" @onclick="Excluir">
+                        <Icone Svg="@Icons.Material.Filled.DeleteOutline" /> Excluir
+                    </button>
+                </SomenteAdmin>
+            </div>
+            <div class="grupo">
+                <span class="ss-estatistica"><Icone Svg="@Icons.Material.Filled.GraphicEq" />@Visual.Plural(faixas.Count, "faixa", "faixas")</span>
+                <span class="ss-estatistica"><Icone Svg="@Icons.Material.Filled.Sell" />@Visual.Plural(generos.Count, "gênero", "gêneros")</span>
+            </div>
+        </div>
+
+        <div class="ss-grid-lateral" style="padding-bottom:64px">
+            <div>
+                <div class="ss-abas" role="tablist">
+                    <button class="ss-aba ativa" role="tab" aria-selected="true">Faixas <span class="contador">@faixas.Count</span></button>
+                </div>
+                @if (faixas.Count == 0)
+                {
+                    <EstadoVazio Titulo="Nenhuma faixa ainda" Texto="@($"{artista.Nome} ainda não tem faixas no catálogo.")">
+                        <SomenteAdmin><a href="/CadastrarMusica" class="ss-btn ss-btn-primario">Enviar faixa</a></SomenteAdmin>
+                    </EstadoVazio>
+                }
+                else
+                {
+                    @foreach (var musica in faixas)
+                    {
+                        <FaixaLinha @key="musica.Id" Musica="musica" Contexto="faixas" />
+                    }
+                }
+            </div>
+
+            <aside class="ss-lateral">
+                <div>
+                    <div class="ss-painel-titulo"><span><Icone Svg="@Icons.Material.Filled.Info" />Sobre</span></div>
+                    <p class="ss-bio">@(string.IsNullOrWhiteSpace(artista.Bio) ? "Este artista ainda não tem biografia." : artista.Bio)</p>
+                </div>
+                <div>
+                    <div class="ss-painel-titulo"><span><Icone Svg="@Icons.Material.Filled.Star" />Sua avaliação</span></div>
+                    <Estrelas Valor="minhaNota" Editavel="true" Grande="true" OnAvaliar="Avaliar" />
+                </div>
+                @if (generos.Count > 0)
+                {
+                    <div>
+                        <div class="ss-painel-titulo"><span><Icone Svg="@Icons.Material.Filled.Sell" />Gêneros</span></div>
+                        <div class="ss-faixa-acoes">
+                            @foreach (var genero in generos)
+                            {
+                                <a class="ss-tag hash" href="@Rotas.Genero(genero)">@genero</a>
+                            }
+                        </div>
+                    </div>
+                }
+            </aside>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string NomeArtista { get; set; } = string.Empty;
+
+    private ArtistaResponse? artista;
+    private List<MusicaResponse> faixas = new();
+    private List<string> generos = new();
+    private bool carregando = true;
+    private double media;
+    private int minhaNota;
+    private string? capaBanner;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        carregando = true;
+
+        var tarefaMusicas = MusicaAPI.GetMusicasAsync();
+        var todos = await ArtistaAPI.GetArtistasAsync() ?? new List<ArtistaResponse>();
+        artista = todos.FirstOrDefault(a => string.Equals(a.Nome, NomeArtista, StringComparison.OrdinalIgnoreCase));
+
+        if (artista is null)
+        {
+            carregando = false;
+            return;
+        }
+
+        media = artista.Classificacao ?? 0;
+        faixas = (await tarefaMusicas)
+            .Where(m => m.ArtistaId == artista.Id)
+            .OrderByDescending(m => m.Classificacao ?? 0)
+            .ThenByDescending(m => m.Id)
+            .ToList();
+        // Sem foto, o banner usa a capa da faixa mais bem avaliada do artista
+        capaBanner = await CapaService.ObterAsync(faixas.FirstOrDefault(f => f.Tocavel)?.SpotifyUrl);
+        generos = faixas.SelectMany(f => f.Generos).Select(g => g.Nome).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+        try
+        {
+            minhaNota = (int)Math.Round((await ArtistaAPI.GetAvaliacaoArtistaAsync(artista.Id))?.nota ?? 0);
+        }
+        catch (HttpRequestException)
+        {
+            minhaNota = 0;
+        }
+
+        carregando = false;
+    }
+
+    private async Task Avaliar(int nota)
+    {
+        try
+        {
+            await ArtistaAPI.AvaliaArtistaAsync(artista!.Id, nota);
+            minhaNota = nota;
+            Snackbar.Add("Avaliação registrada. Obrigado!", Severity.Success);
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private Task TocarTudo() => Player.TocarListaAsync(faixas);
+
+    private Task Embaralhar() => Player.TocarListaAsync(faixas, embaralhar: true);
+
+    private async Task Excluir()
+    {
+        if (faixas.Count > 0)
+        {
+            Snackbar.Add("Não é possível excluir um artista com faixas. Remova ou transfira as faixas primeiro.", Severity.Warning);
+            return;
+        }
+
+        if (!await DialogService.ConfirmarAsync("Excluir artista", $"Tem certeza que deseja excluir “{artista!.Nome}”? Essa ação não pode ser desfeita."))
+            return;
+
+        try
+        {
+            await ArtistaAPI.DeleteArtistaAsync(artista.Id);
+            Snackbar.Add("Artista excluído.", Severity.Success);
+            Navigation.NavigateTo("/Artistas");
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

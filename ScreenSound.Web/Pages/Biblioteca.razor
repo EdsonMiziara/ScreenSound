@@ -1,0 +1,136 @@
+@page "/Playlists"
+@implements IDisposable
+@inject PlaylistAPI PlaylistAPI
+@inject PlayerService Player
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Biblioteca · ScreenSound</PageTitle>
+
+<div class="ss-container ss-pagina">
+    <div class="ss-cab-pagina">
+        <div>
+            <h1 class="ss-titulo-pagina">Biblioteca</h1>
+            <p class="ss-secao-sub">Suas playlists, as da comunidade e o que você ouviu por último</p>
+        </div>
+        <button class="ss-btn ss-btn-primario" @onclick="NovaPlaylist">
+            <Icone Svg="@Icons.Material.Filled.Add" /> Nova playlist
+        </button>
+    </div>
+
+    <div class="ss-abas" role="tablist">
+        <button class="ss-aba @(aba == "minhas" ? "ativa" : null)" role="tab" aria-selected="@(aba == "minhas")" @onclick='() => aba = "minhas"'>
+            Suas playlists <span class="contador">@(minhas?.Count ?? 0)</span>
+        </button>
+        <button class="ss-aba @(aba == "comunidade" ? "ativa" : null)" role="tab" aria-selected="@(aba == "comunidade")" @onclick='() => aba = "comunidade"'>
+            Comunidade <span class="contador">@(comunidade?.Count ?? 0)</span>
+        </button>
+        <button class="ss-aba @(aba == "historico" ? "ativa" : null)" role="tab" aria-selected="@(aba == "historico")" @onclick='() => aba = "historico"'>
+            Ouvidas recentemente
+        </button>
+    </div>
+
+    @if (minhas is null)
+    {
+        <div class="ss-grade">
+            @for (var i = 0; i < 5; i++)
+            {
+                <div><div class="ss-skeleton" style="aspect-ratio:1;margin-top:10px"></div></div>
+            }
+        </div>
+    }
+    else if (aba == "minhas")
+    {
+        <div class="ss-grade">
+            <div>
+                <button class="ss-card-nova" @onclick="NovaPlaylist">
+                    <Icone Svg="@Icons.Material.Filled.Add" />
+                    Criar playlist
+                </button>
+            </div>
+            @foreach (var playlist in minhas)
+            {
+                <PlaylistCard @key="playlist.Id" Playlist="playlist" />
+            }
+        </div>
+        @if (minhas.Count == 0)
+        {
+            <p class="ss-muted" style="margin-top:24px;font-size:14px">
+                Dica: em qualquer faixa, use o botão <strong>Playlist</strong> para adicioná-la a uma playlist nova ou existente.
+            </p>
+        }
+    }
+    else if (aba == "comunidade")
+    {
+        @if (comunidade!.Count == 0)
+        {
+            <EstadoVazio Icone="@Icons.Material.Filled.Groups" Titulo="Nenhuma playlist pública ainda" Texto="Torne uma das suas playlists pública para inaugurar esta seção." />
+        }
+        else
+        {
+            <div class="ss-grade">
+                @foreach (var playlist in comunidade)
+                {
+                    <PlaylistCard @key="playlist.Id" Playlist="playlist" MostrarDono="true" />
+                }
+            </div>
+        }
+    }
+    else
+    {
+        @if (Player.Historico.Count == 0)
+        {
+            <EstadoVazio Icone="@Icons.Material.Filled.History" Titulo="Nada por aqui ainda" Texto="As faixas que você tocar aparecem nesta lista.">
+                <a class="ss-btn ss-btn-primario" href="/Musicas">Explorar faixas</a>
+            </EstadoVazio>
+        }
+        else
+        {
+            @for (var i = 0; i < Player.Historico.Count; i++)
+            {
+                var musica = Player.Historico[i];
+                <LinhaCompacta @key="musica.Id" Musica="musica" Numero="i + 1" Contexto="Player.Historico" />
+            }
+        }
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "aba")]
+    private string? AbaQuery { get; set; }
+
+    private string aba = "minhas";
+    private List<PlaylistResponse>? minhas;
+    private List<PlaylistResponse>? comunidade;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Player.OnMudanca += AoMudar;
+
+        if (AbaQuery is "comunidade" or "historico") aba = AbaQuery;
+
+        try
+        {
+            var tarefaPublicas = PlaylistAPI.GetPublicasAsync();
+            minhas = await PlaylistAPI.GetMinhasAsync();
+            comunidade = (await tarefaPublicas).Where(p => !p.EhDono).ToList();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+            minhas ??= new();
+            comunidade ??= new();
+        }
+    }
+
+    private async Task NovaPlaylist()
+    {
+        var id = await DialogService.FormularioPlaylistAsync();
+        if (id is int novo) Navigation.NavigateTo(Rotas.Playlist(novo));
+    }
+
+    private void AoMudar() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Player.OnMudanca -= AoMudar;
+}

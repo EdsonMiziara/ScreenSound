@@ -198,8 +198,9 @@ public class ContextoFixture : WebApplicationFactory<Program>, IAsyncLifetime
         });
     }
 
-    Task IAsyncLifetime.DisposeAsync()
+    async Task IAsyncLifetime.DisposeAsync()
     {
-        throw new NotImplementedException();
+        _scope?.Dispose();
+        await _dbContainer.DisposeAsync();
     }
 }

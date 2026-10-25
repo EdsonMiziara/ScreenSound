@@ -1,0 +1,12 @@
+@* Renderiza o conteúdo apenas para administradores (gestão do catálogo) *@
+<AuthorizeView Roles="@Perfis.Administrador">
+    <Authorized>@ChildContent</Authorized>
+    <NotAuthorized>@SenaoAdmin</NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Conteúdo alternativo para quem não é administrador.</summary>
+    [Parameter] public RenderFragment? SenaoAdmin { get; set; }
+}

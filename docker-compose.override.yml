@@ -1,14 +1,4 @@
-services:
-  screensound.api:
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
-      - ASPNETCORE_HTTPS_PORTS=8081
-    ports:
-      - "8080"
-      - "8081"
-    volumes:
-      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
-      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
-      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
-      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+# Carregado automaticamente pelo "docker compose" junto com o docker-compose.yml.
+# Use para ajustes locais (portas, variáveis) sem alterar o arquivo principal.
+# Obs.: não habilite HTTPS aqui — dentro dos containers a API usa só HTTP (porta 8080).
+services: {}

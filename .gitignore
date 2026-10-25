@@ -480,3 +480,8 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+**/appsettings.Development.json
+**/appsettings.Local.json
+# O front (Blazor WASM) não tem segredos: o arquivo de desenvolvimento só aponta para a API local
+!ScreenSound.Web/wwwroot/appsettings.Development.json

@@ -1,0 +1,108 @@
+@implements IDisposable
+@inject NavigationManager Navigation
+
+<header class="ss-header">
+    <div class="ss-container ss-header-inner">
+        <Logo />
+
+        <nav class="ss-nav" aria-label="Navegação principal">
+            <NavLink href="/" Match="NavLinkMatch.All">Início</NavLink>
+            <AuthorizeView>
+                <Authorized>
+                    <NavLink href="/Musicas">Faixas</NavLink>
+                    <NavLink href="/Artistas">Artistas</NavLink>
+                    <NavLink href="/Playlists">Biblioteca</NavLink>
+                </Authorized>
+            </AuthorizeView>
+            <NavLink href="/Sobre">Sobre</NavLink>
+        </nav>
+
+        <AuthorizeView>
+            <Authorized>
+                <form class="ss-busca" role="search" @onsubmit="Buscar">
+                    <Icone Svg="@Icons.Material.Filled.Search" Class="ss-busca-icone" />
+                    <input type="search" placeholder="Busque artistas, faixas, playlists e gêneros" aria-label="Buscar"
+                           @bind="termo" @bind:event="oninput" />
+                </form>
+            </Authorized>
+        </AuthorizeView>
+
+        <div class="ss-header-acoes">
+            <AuthorizeView>
+                <Authorized>
+                    <SomenteAdmin>
+                        <a href="/CadastrarMusica" class="ss-btn ss-btn-fantasma ss-esconde-mobile">
+                            <Icone Svg="@Icons.Material.Filled.CloudUpload" /> Enviar
+                        </a>
+                    </SomenteAdmin>
+
+                    <div class="ss-dropdown">
+                        <button class="ss-btn-icone" style="width:auto;height:auto" aria-label="Menu da conta" aria-expanded="@menuAberto" @onclick="() => menuAberto = !menuAberto">
+                            <Avatar Nome="@context.User.FindFirst(ClaimsScreenSound.Nome)?.Value" Foto="@context.User.FindFirst(ClaimsScreenSound.Foto)?.Value" Tamanho="32" />
+                        </button>
+                        @if (menuAberto)
+                        {
+                            <div class="ss-dropdown-fundo" @onclick="() => menuAberto = false"></div>
+                            <div class="ss-dropdown-menu" @onclick="() => menuAberto = false">
+                                <div class="ss-dropdown-cab">
+                                    <strong>@(context.User.FindFirst(ClaimsScreenSound.Nome)?.Value ?? "Ouvinte")</strong>
+                                    <span>@context.User.Identity?.Name</span>
+                                    <span class="ss-papel @(context.User.IsInRole(Perfis.Administrador) ? "admin" : null)">@(context.User.IsInRole(Perfis.Administrador) ? "Administrador" : "Ouvinte")</span>
+                                </div>
+                                <div class="ss-menu-mobile">
+                                    <a class="ss-dropdown-item" href="/"><Icone Svg="@Icons.Material.Filled.Home" /> Início</a>
+                                    <a class="ss-dropdown-item" href="/Musicas"><Icone Svg="@Icons.Material.Filled.GraphicEq" /> Faixas</a>
+                                    <a class="ss-dropdown-item" href="/Artistas"><Icone Svg="@Icons.Material.Filled.People" /> Artistas</a>
+                                    <a class="ss-dropdown-item" href="/Sobre"><Icone Svg="@Icons.Material.Filled.Info" /> Sobre o projeto</a>
+                                    <div class="ss-dropdown-sep"></div>
+                                </div>
+                                <a class="ss-dropdown-item" href="/Playlists"><Icone Svg="@Icons.Material.Filled.LibraryMusic" /> Minhas playlists</a>
+                                <a class="ss-dropdown-item" href="/Perfil"><Icone Svg="@Icons.Material.Filled.ManageAccounts" /> Editar perfil</a>
+                                <SomenteAdmin>
+                                    <div class="ss-dropdown-sep"></div>
+                                    <a class="ss-dropdown-item" href="/CadastrarMusica"><Icone Svg="@Icons.Material.Filled.CloudUpload" /> Enviar faixa</a>
+                                    <a class="ss-dropdown-item" href="/CadastrarArtista"><Icone Svg="@Icons.Material.Filled.PersonAdd" /> Novo artista</a>
+                                    <a class="ss-dropdown-item" href="/Admin/Usuarios"><Icone Svg="@Icons.Material.Filled.AdminPanelSettings" /> Usuários e permissões</a>
+                                </SomenteAdmin>
+                                <div class="ss-dropdown-sep"></div>
+                                <a class="ss-dropdown-item" href="/logout"><Icone Svg="@Icons.Material.Filled.Logout" /> Sair</a>
+                            </div>
+                        }
+                    </div>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="/login" class="ss-btn ss-btn-contorno">Entrar</a>
+                    <a href="/registrar" class="ss-btn ss-btn-primario ss-esconde-mobile">Criar conta</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </div>
+</header>
+
+@code {
+    private string? termo;
+    private bool menuAberto;
+
+    protected override void OnInitialized() => Navigation.LocationChanged += AoNavegar;
+
+    private void AoNavegar(object? sender, LocationChangedEventArgs e)
+    {
+        menuAberto = false;
+
+        var uri = Navigation.ToAbsoluteUri(e.Location);
+        if (!uri.AbsolutePath.StartsWith("/Buscar", StringComparison.OrdinalIgnoreCase))
+        {
+            termo = null;
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void Buscar()
+    {
+        if (string.IsNullOrWhiteSpace(termo)) return;
+        Navigation.NavigateTo(Rotas.Busca(termo.Trim()));
+    }
+
+    public void Dispose() => Navigation.LocationChanged -= AoNavegar;
+}

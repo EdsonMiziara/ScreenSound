@@ -1,5 +1,6 @@
 ﻿using ScreenSound.Modelos;
 
+
 namespace ScreenSound.Teste.ArtistaTestes;
 
 public class ArtistaConstrutorTeste
@@ -38,4 +39,6 @@ public class ArtistaConstrutorTeste
         Assert.Equal(artista.EhValido, valido);
         Assert.Equal(artista.Erros.Count(), 1);
     }
+
+
 }

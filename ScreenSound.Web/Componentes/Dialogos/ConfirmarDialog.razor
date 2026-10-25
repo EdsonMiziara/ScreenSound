@@ -1,0 +1,15 @@
+<MudDialog>
+    <DialogContent>
+        <p class="ss-muted" style="line-height:1.6">@Mensagem</p>
+    </DialogContent>
+    <DialogActions>
+        <button class="ss-btn ss-btn-fantasma" @onclick="() => MudDialog.Cancel()">Cancelar</button>
+        <button class="ss-btn ss-btn-primario" style="background:var(--ss-perigo)" @onclick="() => MudDialog.Close(DialogResult.Ok(true))">@TextoConfirmar</button>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public string Mensagem { get; set; } = string.Empty;
+    [Parameter] public string TextoConfirmar { get; set; } = "Excluir";
+}
