@@ -1,0 +1,244 @@
+@page "/Musica/{NomeMusica}"
+@inject MusicaAPI MusicaAPI
+@inject CapaService CapaService
+@inject PlayerService Player
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<PageTitle>@(musica?.Nome ?? "Faixa") · ScreenSound</PageTitle>
+
+@if (carregando)
+{
+    <div class="ss-container ss-pagina"><SkeletonFaixas Quantidade="1" /></div>
+}
+else if (musica is null)
+{
+    <div class="ss-container ss-pagina">
+        <EstadoVazio Icone="@Icons.Material.Filled.SearchOff" Titulo="Faixa não encontrada" Texto="Ela pode ter sido removida ou renomeada.">
+            <a href="/Musicas" class="ss-btn ss-btn-primario">Ver todas as faixas</a>
+        </EstadoVazio>
+    </div>
+}
+else
+{
+    <section class="ss-hero">
+        <div class="ss-hero-fundo" style="background:@Visual.Gradiente(musica.Nome)">
+            @if (capa is not null)
+            {
+                <img src="@capa" alt="" />
+            }
+        </div>
+        <div class="ss-container ss-hero-inner">
+            <div class="ss-hero-esq">
+                <div class="ss-hero-cab">
+                    <BotaoPlay Musica="musica" Lista="contexto" Tamanho="lg" />
+                    <div class="ss-hero-textos">
+                        <a class="ss-rotulo sub" href="@Rotas.Artista(musica.NomeArtista)">@(musica.NomeArtista ?? "Artista desconhecido")</a>
+                        <h1 class="ss-rotulo titulo">@musica.Nome</h1>
+                    </div>
+                </div>
+                <div class="ss-hero-meta">
+                    @if (musica.AnoLancamento is > 0)
+                    {
+                        <span class="ss-rotulo pequeno">Lançada em @musica.AnoLancamento</span>
+                    }
+                    @foreach (var genero in musica.Generos)
+                    {
+                        <a class="ss-rotulo pequeno" href="@Rotas.Genero(genero.Nome)">#@genero.Nome</a>
+                    }
+                </div>
+                <div class="ss-hero-wave">
+                    @if (musica.Tocavel)
+                    {
+                        <Waveform Musica="musica" Contexto="contexto" Barras="220" Class="grande sobre-imagem" MostrarTempo="true" />
+                    }
+                    else
+                    {
+                        <span class="ss-rotulo pequeno">Esta faixa ainda não tem link do Spotify para tocar no player.</span>
+                    }
+                </div>
+            </div>
+            <Capa SpotifyUrl="@musica.SpotifyUrl" Semente="@musica.Nome" />
+        </div>
+    </section>
+
+    <div class="ss-container">
+        <div class="ss-barra-acoes">
+            <div class="grupo">
+                <button class="ss-btn ss-btn-contorno ss-btn-sm" @onclick="() => DialogService.AdicionarAPlaylistAsync(musica)">
+                    <Icone Svg="@Icons.Material.Filled.PlaylistAdd" /> Adicionar à playlist
+                </button>
+                <button class="ss-btn ss-btn-contorno ss-btn-sm" @onclick="AdicionarNaFila" disabled="@(!musica.Tocavel)">
+                    <Icone Svg="@Icons.Material.Filled.QueueMusic" /> Tocar em seguida
+                </button>
+                <button class="ss-btn ss-btn-contorno ss-btn-sm" @onclick="CopiarLink">
+                    <Icone Svg="@Icons.Material.Filled.Link" /> Copiar link
+                </button>
+                @if (musica.Tocavel)
+                {
+                    <a class="ss-btn ss-btn-contorno ss-btn-sm" href="@musica.SpotifyUrl" target="_blank" rel="noopener">
+                        <Icone Svg="@Icons.Material.Filled.OpenInNew" /> Abrir no Spotify
+                    </a>
+                }
+                <SomenteAdmin>
+                    <a class="ss-btn ss-btn-fantasma ss-btn-sm" href="@Rotas.EditarMusica(musica.Nome)">
+                        <Icone Svg="@Icons.Material.Filled.Edit" /> Editar
+                    </a>
+                </SomenteAdmin>
+            </div>
+            <div class="grupo">
+                @if (musica.Classificacao is > 0)
+                {
+                    <span class="ss-estatistica">
+                        <Estrelas Valor="musica.Classificacao.Value" />
+                        @musica.Classificacao.Value.ToString("0.0", CultureInfo.InvariantCulture)
+                    </span>
+                }
+            </div>
+        </div>
+
+        <div class="ss-grid-lateral ss-pagina ss-mt-0" style="padding-top:0">
+            <div>
+                <section class="ss-secao">
+                    <h2 class="ss-secao-titulo" style="margin-bottom:12px">Sua avaliação</h2>
+                    <div class="ss-faixa-acoes" style="gap:16px">
+                        <Estrelas Valor="minhaNota" Editavel="true" Grande="true" OnAvaliar="Avaliar" />
+                        <span class="ss-muted" style="font-size:14px">@(minhaNota > 0 ? $"Você deu {minhaNota} de 5" : "Toque nas estrelas para avaliar")</span>
+                    </div>
+                </section>
+
+                @if (relacionadas.Count > 0)
+                {
+                    <section class="ss-secao">
+                        <div class="ss-secao-cab">
+                            <div>
+                                <h2 class="ss-secao-titulo">Faixas relacionadas</h2>
+                                <p class="ss-secao-sub">Do mesmo gênero</p>
+                            </div>
+                        </div>
+                        @foreach (var item in relacionadas)
+                        {
+                            <FaixaLinha @key="item.Id" Musica="item" Contexto="relacionadas" />
+                        }
+                    </section>
+                }
+            </div>
+
+            <aside class="ss-lateral">
+                @if (doArtista.Count > 0)
+                {
+                    <div>
+                        <div class="ss-painel-titulo">
+                            <span><Icone Svg="@Icons.Material.Filled.Person" />Mais de @musica.NomeArtista</span>
+                            <a class="ss-link" href="@Rotas.Artista(musica.NomeArtista)">Ver tudo</a>
+                        </div>
+                        @foreach (var item in doArtista)
+                        {
+                            <LinhaCompacta @key="item.Id" Musica="item" Contexto="doArtista" />
+                        }
+                    </div>
+                }
+                @if (musica.Generos.Any(g => !string.IsNullOrWhiteSpace(g.DescricaoGenero)))
+                {
+                    <div>
+                        <div class="ss-painel-titulo"><span><Icone Svg="@Icons.Material.Filled.Sell" />Gêneros</span></div>
+                        @foreach (var genero in musica.Generos.Where(g => !string.IsNullOrWhiteSpace(g.DescricaoGenero)))
+                        {
+                            <p class="ss-bio" style="margin-bottom:10px"><strong style="color:var(--ss-texto)">@genero.Nome</strong> — @genero.DescricaoGenero</p>
+                        }
+                    </div>
+                }
+            </aside>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string NomeMusica { get; set; } = string.Empty;
+
+    private MusicaResponse? musica;
+    private string? capa;
+    private bool carregando = true;
+    private int minhaNota;
+    private List<MusicaResponse> contexto = new();
+    private List<MusicaResponse> relacionadas = new();
+    private List<MusicaResponse> doArtista = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        carregando = true;
+        try
+        {
+            musica = await MusicaAPI.GetMusicaPorNomeAsync(NomeMusica);
+        }
+        catch (HttpRequestException)
+        {
+            musica = null;
+        }
+
+        if (musica is null)
+        {
+            carregando = false;
+            return;
+        }
+
+        capa = await CapaService.ObterAsync(musica.SpotifyUrl);
+
+        var todas = (await MusicaAPI.GetMusicasAsync()).Where(m => m.Id != musica.Id).ToList();
+        var generos = musica.Generos.Select(g => g.Nome).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        doArtista = todas.Where(m => m.ArtistaId == musica.ArtistaId).Take(5).ToList();
+        relacionadas = todas
+            .Where(m => m.ArtistaId != musica.ArtistaId && m.Generos.Any(g => generos.Contains(g.Nome)))
+            .OrderByDescending(m => m.Tocavel)
+            .ThenByDescending(m => m.Classificacao ?? 0)
+            .Take(5)
+            .ToList();
+        contexto = new List<MusicaResponse> { musica }.Concat(doArtista).Concat(relacionadas).ToList();
+
+        try
+        {
+            minhaNota = (int)Math.Round((await MusicaAPI.GetAvaliacaoMusicaAsync(musica.Id))?.nota ?? 0);
+        }
+        catch (HttpRequestException)
+        {
+            minhaNota = 0;
+        }
+
+        carregando = false;
+    }
+
+    private async Task Avaliar(int nota)
+    {
+        try
+        {
+            await MusicaAPI.AvaliaMusicaAsync(musica!.Id, nota);
+            minhaNota = nota;
+            Snackbar.Add("Avaliação registrada. Obrigado!", Severity.Success);
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private void AdicionarNaFila()
+    {
+        if (Player.Atual is null)
+        {
+            _ = Player.TocarAsync(musica!, contexto);
+            return;
+        }
+
+        Player.AdicionarNaFila(musica!);
+        Snackbar.Add("Adicionada à fila.", Severity.Normal);
+    }
+
+    private async Task CopiarLink()
+    {
+        var copiou = await JS.InvokeAsync<bool>("ssUi.copiar", Navigation.Uri);
+        Snackbar.Add(copiou ? "Link copiado!" : "Não foi possível copiar o link.", copiou ? Severity.Success : Severity.Warning);
+    }
+}

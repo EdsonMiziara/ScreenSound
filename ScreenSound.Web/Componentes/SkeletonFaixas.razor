@@ -1,0 +1,15 @@
+@for (var i = 0; i < Quantidade; i++)
+{
+    <div class="ss-skel-faixa" aria-hidden="true">
+        <div class="ss-skeleton c"></div>
+        <div style="flex:1">
+            <div class="ss-skeleton l" style="width:20%"></div>
+            <div class="ss-skeleton l" style="width:45%"></div>
+            <div class="ss-skeleton" style="height:46px;margin-top:14px"></div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Quantidade { get; set; } = 4;
+}

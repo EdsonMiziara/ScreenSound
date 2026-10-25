@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore; 
 using ScreenSound.API.Request;
 using ScreenSound.API.Requests;
+using ScreenSound.API.Seguranca;
 using ScreenSound.Banco;
 using ScreenSound.Modelos;
 using ScreenSound.Shared.Data.Banco;
@@ -51,7 +52,7 @@ public static class GeneroExtensions
             await uow.CommitAsync(); 
 
             return Results.Created(); 
-        });
+        }).RequireAuthorization(Politicas.Admin);
 
         grupo.MapPut("/", async (
             [FromServices] IUnitOfWork uow,
@@ -72,7 +73,7 @@ public static class GeneroExtensions
             await uow.CommitAsync();
 
             return Results.Ok();
-        });
+        }).RequireAuthorization(Politicas.Admin);
 
         grupo.MapDelete("/{id}", async (
             [FromServices] IUnitOfWork uow, 
@@ -86,6 +87,6 @@ public static class GeneroExtensions
             await uow.CommitAsync(); 
 
             return Results.NoContent();
-        });
+        }).RequireAuthorization(Politicas.Admin);
     }
 }

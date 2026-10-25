@@ -1,0 +1,94 @@
+@inject PlaylistAPI PlaylistAPI
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <form id="form-playlist" @onsubmit="Salvar">
+            @if (erro is not null)
+            {
+                <div class="ss-erro">@erro</div>
+            }
+            <div class="ss-input-grupo">
+                <label for="pl-nome">Nome <span class="ss-obrigatorio">*</span></label>
+                <input id="pl-nome" class="ss-input" @bind="nome" @bind:event="oninput" maxlength="100" placeholder="Ex.: Para codar à noite" autofocus />
+            </div>
+            <div class="ss-input-grupo">
+                <label for="pl-desc">Descrição</label>
+                <textarea id="pl-desc" class="ss-input" @bind="descricao" maxlength="500" rows="3" placeholder="Conte do que se trata esta playlist"></textarea>
+            </div>
+            <label class="ss-switch">
+                <input type="checkbox" @bind="publica" />
+                <span class="trilho"></span>
+                @(publica ? "Pública — aparece para a comunidade" : "Privada — só você vê")
+            </label>
+            @if (MusicaInicial is not null)
+            {
+                <p class="ss-dica" style="margin-top:14px">“@MusicaInicial.Nome” será adicionada à nova playlist.</p>
+            }
+        </form>
+    </DialogContent>
+    <DialogActions>
+        <button type="button" class="ss-btn ss-btn-fantasma" @onclick="() => MudDialog.Cancel()">Cancelar</button>
+        <button type="submit" form="form-playlist" class="ss-btn ss-btn-primario" disabled="@(salvando || string.IsNullOrWhiteSpace(nome))">
+            @(salvando ? "Salvando..." : Playlist is null ? "Criar playlist" : "Salvar")
+        </button>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public PlaylistResponse? Playlist { get; set; }
+    [Parameter] public MusicaResponse? MusicaInicial { get; set; }
+
+    private string nome = string.Empty;
+    private string? descricao;
+    private bool publica = true;
+    private bool salvando;
+    private string? erro;
+
+    protected override void OnInitialized()
+    {
+        if (Playlist is null) return;
+
+        nome = Playlist.Nome;
+        descricao = Playlist.Descricao;
+        publica = Playlist.Publica;
+    }
+
+    private async Task Salvar()
+    {
+        if (string.IsNullOrWhiteSpace(nome) || salvando) return;
+
+        salvando = true;
+        erro = null;
+
+        try
+        {
+            var musicas = MusicaInicial is null ? null : new List<int> { MusicaInicial.Id };
+            var request = new PlaylistRequest(nome.Trim(), descricao, publica, musicas);
+
+            int id;
+            if (Playlist is null)
+            {
+                id = await PlaylistAPI.CriarAsync(request);
+                Snackbar.Add($"Playlist “{request.Nome}” criada!", Severity.Success);
+            }
+            else
+            {
+                id = Playlist.Id;
+                await PlaylistAPI.AtualizarAsync(id, request);
+                Snackbar.Add("Playlist atualizada.", Severity.Success);
+            }
+
+            MudDialog.Close(DialogResult.Ok(id));
+        }
+        catch (HttpRequestException ex)
+        {
+            erro = ex.Message;
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+}

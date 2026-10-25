@@ -1,5 +1,6 @@
 ﻿using ScreenSound.API.Request;
 using ScreenSound.Modelos;
+using ScreenSound.Shared.Modelos.Auxiliar;
 using ScreenSound.Teste.Integracao.Config;
 using System.Net;
 using System.Net.Http.Json;
@@ -21,7 +22,7 @@ public class Artista_Post
     public async Task RetornaCreatedQuandoCadastraArtistaValido()
     {
         //Arrange
-        using var client = app.CreateClient();
+        using var client = app.CreateClientAuthorized();
 
         var artista = new ArtistaRequest("Artista", "bio");
 
@@ -41,7 +42,7 @@ public class Artista_Post
     public async Task RetornaBadRequestQuandoCadastraArtistaNaoValido()
     {
         //Arrange
-        using var client = app.CreateClient();
+        using var client = app.CreateClientAuthorized();
         var artista = new ArtistaRequest("", "bio");
         //Act
         var response = await client.PostAsJsonAsync("/Artistas", artista);
@@ -50,6 +51,8 @@ public class Artista_Post
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         
     }
+
+
 
 }
 

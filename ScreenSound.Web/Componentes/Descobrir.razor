@@ -1,0 +1,189 @@
+@implements IDisposable
+@inject MusicaAPI MusicaAPI
+@inject ArtistaAPI ArtistaAPI
+@inject PlaylistAPI PlaylistAPI
+@inject PlayerService Player
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<div class="ss-container ss-pagina">
+    <section class="ss-boas-vindas">
+        <h1>@Saudacao, @nome</h1>
+        <p>
+            @if (musicas is null)
+            {
+                <text>Preparando suas recomendações...</text>
+            }
+            else
+            {
+                <text>@Visual.Plural(musicas.Count, "faixa está", "faixas estão") esperando por você hoje.</text>
+            }
+        </p>
+        <div class="acoes">
+            <button class="ss-btn ss-btn-primario" @onclick="TocarAleatorio" disabled="@(musicas is null)">
+                <Icone Svg="@Icons.Material.Filled.Shuffle" /> Tocar aleatório
+            </button>
+            <button class="ss-btn ss-btn-contorno" @onclick="NovaPlaylist">
+                <Icone Svg="@Icons.Material.Filled.PlaylistAdd" /> Nova playlist
+            </button>
+            <SomenteAdmin>
+                <a class="ss-btn ss-btn-contorno" href="/CadastrarMusica">
+                    <Icone Svg="@Icons.Material.Filled.CloudUpload" /> Enviar faixa
+                </a>
+            </SomenteAdmin>
+        </div>
+    </section>
+
+    <div class="ss-grid-lateral">
+        <div>
+            <section class="ss-secao">
+                <div class="ss-secao-cab">
+                    <div>
+                        <h2 class="ss-secao-titulo">Novidades</h2>
+                        <p class="ss-secao-sub">As faixas adicionadas mais recentemente</p>
+                    </div>
+                    <a class="ss-link" href="/Musicas">Ver todas</a>
+                </div>
+                @if (novidades is null)
+                {
+                    <div class="ss-carrossel">
+                        @for (var i = 0; i < 5; i++)
+                        {
+                            <div><div class="ss-skeleton" style="aspect-ratio:1"></div></div>
+                        }
+                    </div>
+                }
+                else if (novidades.Count == 0)
+                {
+                    <EstadoVazio Titulo="Nenhuma faixa ainda" Texto="O catálogo ainda está sendo montado.">
+                        <SomenteAdmin><a href="/CadastrarMusica" class="ss-btn ss-btn-primario">Enviar faixa</a></SomenteAdmin>
+                    </EstadoVazio>
+                }
+                else
+                {
+                    <div class="ss-carrossel">
+                        @foreach (var musica in novidades)
+                        {
+                            <FaixaCard @key="musica.Id" Musica="musica" Contexto="novidades" />
+                        }
+                    </div>
+                }
+            </section>
+
+            @if (artistas is { Count: > 0 })
+            {
+                <section class="ss-secao">
+                    <div class="ss-secao-cab">
+                        <div>
+                            <h2 class="ss-secao-titulo">Artistas em destaque</h2>
+                            <p class="ss-secao-sub">Os mais bem avaliados pela comunidade</p>
+                        </div>
+                        <a class="ss-link" href="/Artistas">Ver todos</a>
+                    </div>
+                    <div class="ss-carrossel">
+                        @foreach (var artista in artistas)
+                        {
+                            <ArtistaCard @key="artista.Id" Artista="artista" TotalFaixas="@FaixasDo(artista.Id)" />
+                        }
+                    </div>
+                </section>
+            }
+
+            <section class="ss-secao">
+                <div class="ss-secao-cab">
+                    <div>
+                        <h2 class="ss-secao-titulo">Suas playlists</h2>
+                        <p class="ss-secao-sub">Sua coleção, sempre à mão</p>
+                    </div>
+                    <a class="ss-link" href="/Playlists">Biblioteca</a>
+                </div>
+                <div class="ss-carrossel">
+                    <div>
+                        <button class="ss-card-nova" @onclick="NovaPlaylist">
+                            <Icone Svg="@Icons.Material.Filled.Add" />
+                            Criar playlist
+                        </button>
+                    </div>
+                    @foreach (var playlist in minhas ?? new())
+                    {
+                        <PlaylistCard @key="playlist.Id" Playlist="playlist" />
+                    }
+                </div>
+            </section>
+
+            @if (emAlta is { Count: > 0 })
+            {
+                <section class="ss-secao">
+                    <div class="ss-secao-cab">
+                        <div>
+                            <h2 class="ss-secao-titulo">Em alta</h2>
+                            <p class="ss-secao-sub">As faixas com as melhores avaliações</p>
+                        </div>
+                    </div>
+                    @foreach (var musica in emAlta)
+                    {
+                        <FaixaLinha @key="musica.Id" Musica="musica" Contexto="emAlta" />
+                    }
+                </section>
+            }
+
+            @if (comunidade is { Count: > 0 })
+            {
+                <section class="ss-secao">
+                    <div class="ss-secao-cab">
+                        <div>
+                            <h2 class="ss-secao-titulo">Da comunidade</h2>
+                            <p class="ss-secao-sub">Playlists públicas criadas por outros ouvintes</p>
+                        </div>
+                        <a class="ss-link" href="/Playlists?aba=comunidade">Ver todas</a>
+                    </div>
+                    <div class="ss-carrossel">
+                        @foreach (var playlist in comunidade)
+                        {
+                            <PlaylistCard @key="playlist.Id" Playlist="playlist" MostrarDono="true" />
+                        }
+                    </div>
+                </section>
+            }
+        </div>
+
+        <aside class="ss-lateral">
+            <div>
+                <div class="ss-painel-titulo"><span><Icone Svg="@Icons.Material.Filled.Insights" />Catálogo</span></div>
+                <div class="ss-stats">
+                    <div class="ss-stat"><strong>@(musicas?.Count ?? 0)</strong><span>Faixas</span></div>
+                    <div class="ss-stat"><strong>@(totalArtistas)</strong><span>Artistas</span></div>
+                    <div class="ss-stat"><strong>@(totalGeneros)</strong><span>Gêneros</span></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="ss-painel-titulo"><span><Icone Svg="@Icons.Material.Filled.History" />Ouvidas recentemente</span></div>
+                @if (Player.Historico.Count == 0)
+                {
+                    <p class="ss-muted" style="font-size:13px;line-height:1.6">As faixas que você tocar aparecem aqui.</p>
+                }
+                else
+                {
+                    @foreach (var musica in Player.Historico.Take(5))
+                    {
+                        <LinhaCompacta @key="musica.Id" Musica="musica" Contexto="Player.Historico" />
+                    }
+                }
+            </div>
+
+            <div class="ss-rodape-lateral">
+                <div class="ss-painel-titulo"><span><Icone Svg="@Icons.Material.Filled.Code" />Sobre o projeto</span></div>
+                ScreenSound é um projeto full stack de estudo em .NET.
+                <div class="stack">
+                    <span class="ss-tag">.NET 9</span>
+                    <span class="ss-tag">Blazor WASM</span>
+                    <span class="ss-tag">EF Core</span>
+                    <span class="ss-tag">Azure</span>
+                </div>
+                <a class="ss-link-laranja" href="/Sobre">Como o projeto foi construído →</a>
+            </div>
+        </aside>
+    </div>
+</div>

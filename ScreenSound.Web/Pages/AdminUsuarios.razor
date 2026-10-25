@@ -1,0 +1,106 @@
+@page "/Admin/Usuarios"
+@attribute [Authorize(Roles = Perfis.Administrador)]
+@inject PerfilAPI PerfilAPI
+@inject ISnackbar Snackbar
+
+<PageTitle>Usuários e permissões · ScreenSound</PageTitle>
+
+<div class="ss-container ss-pagina">
+    <div class="ss-cab-pagina">
+        <div>
+            <h1 class="ss-titulo-pagina">Usuários e permissões</h1>
+            <p class="ss-secao-sub">Administradores gerenciam o catálogo (artistas e faixas) e as permissões. Ouvintes exploram, avaliam e montam playlists.</p>
+        </div>
+    </div>
+
+    @if (usuarios is null)
+    {
+        <SkeletonFaixas Quantidade="3" />
+    }
+    else
+    {
+        <div class="ss-toolbar">
+            <div class="ss-campo-busca">
+                <Icone Svg="@Icons.Material.Filled.FilterList" />
+                <input class="ss-campo" type="search" placeholder="Filtrar por nome ou e-mail" @bind="filtro" @bind:event="oninput" />
+            </div>
+            <span class="ss-estatistica">@Visual.Plural(usuarios.Count, "usuário", "usuários") · @Visual.Plural(usuarios.Count(u => u.Admin), "administrador", "administradores")</span>
+        </div>
+
+        <div class="ss-tabela">
+            @foreach (var usuario in Filtrados)
+            {
+                <div class="ss-tabela-linha" @key="usuario.Id">
+                    <Avatar Nome="@usuario.NomePublico" Foto="@usuario.FotoPerfil" Tamanho="40" />
+                    <div class="ss-linha-textos">
+                        <span class="ss-linha-nome">@usuario.NomePublico</span>
+                        <span class="ss-linha-sub">@usuario.Email</span>
+                    </div>
+                    @if (usuario.ContaDemo)
+                    {
+                        <span class="ss-papel" title="Perfil fixo, definido na configuração da API">Demo</span>
+                    }
+                    <span class="ss-papel @(usuario.Admin ? "admin" : null)">@(usuario.Admin ? "Administrador" : "Ouvinte")</span>
+                    <label class="ss-switch" title="@(usuario.ContaDemo ? "O perfil das contas demo é fixo" : usuario.Id == meuId ? "Você não pode remover o próprio acesso" : "Alternar administrador")">
+                        <input type="checkbox" checked="@usuario.Admin" disabled="@(usuario.ContaDemo || usuario.Id == meuId || processando == usuario.Id)"
+                               @onchange="e => Alterar(usuario, (bool)(e.Value ?? false))" />
+                        <span class="trilho"></span>
+                    </label>
+                </div>
+            }
+        </div>
+        <p class="ss-dica" style="margin-top:14px">A mudança de permissão vale a partir do próximo login da pessoa.</p>
+    }
+</div>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    private List<UsuarioResponse>? usuarios;
+    private string? filtro;
+    private int? processando;
+    private int meuId;
+
+    private IEnumerable<UsuarioResponse> Filtrados => string.IsNullOrWhiteSpace(filtro)
+        ? usuarios!
+        : usuarios!.Where(u => Visual.Contem(u.NomePublico, filtro.Trim()) || Visual.Contem(u.Email, filtro.Trim()));
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState is not null)
+        {
+            var estado = await AuthState;
+            int.TryParse(estado.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out meuId);
+        }
+
+        try
+        {
+            usuarios = await PerfilAPI.GetUsuariosAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            usuarios = new();
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task Alterar(UsuarioResponse usuario, bool admin)
+    {
+        processando = usuario.Id;
+        try
+        {
+            await PerfilAPI.DefinirAdminAsync(usuario.Id, admin);
+            var indice = usuarios!.IndexOf(usuario);
+            usuarios[indice] = usuario with { Admin = admin };
+            Snackbar.Add(admin ? $"{usuario.NomePublico} agora é administrador." : $"{usuario.NomePublico} agora é ouvinte.", Severity.Success);
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            processando = null;
+        }
+    }
+}

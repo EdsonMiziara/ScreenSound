@@ -1,0 +1,95 @@
+@page "/registrar"
+@inject AuthAPI AuthAPI
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@attribute [AllowAnonymous]
+
+<PageTitle>Criar conta · ScreenSound</PageTitle>
+
+<div class="ss-auth">
+    <div class="ss-auth-card">
+        <Logo />
+        <h1>Crie sua conta</h1>
+        <p class="sub">É grátis e leva menos de um minuto.</p>
+
+        @if (erro is not null)
+        {
+            <div class="ss-erro" role="alert">@erro</div>
+        }
+
+        <form @onsubmit="CriarConta">
+            <div class="ss-input-grupo">
+                <label for="email">E-mail</label>
+                <input id="email" class="ss-input" type="email" autocomplete="email" placeholder="voce@email.com" @bind="email" required />
+            </div>
+            <div class="ss-input-grupo">
+                <label for="senha">Senha</label>
+                <input id="senha" class="ss-input" type="password" autocomplete="new-password" placeholder="Crie uma senha" @bind="senha" @bind:event="oninput" required />
+                <p class="ss-dica">Mínimo de 6 caracteres, com letra maiúscula, minúscula, número e símbolo.</p>
+            </div>
+            <div class="ss-input-grupo">
+                <label for="confirmacao">Confirme a senha</label>
+                <input id="confirmacao" class="ss-input" type="password" autocomplete="new-password" placeholder="Repita a senha" @bind="confirmacao" @bind:event="oninput" required />
+            </div>
+            <button type="submit" class="ss-btn ss-btn-primario ss-btn-lg ss-btn-bloco" disabled="@enviando">
+                @(enviando ? "Criando conta..." : "Criar conta")
+            </button>
+        </form>
+
+        <div class="ss-auth-rodape">
+            Já tem conta? <a class="ss-link-laranja" href="@LinkLogin">Entrar</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? email;
+    private string? senha;
+    private string? confirmacao;
+    private string? erro;
+    private bool enviando;
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string LinkLogin => string.IsNullOrEmpty(ReturnUrl) ? "/login" : $"/login?ReturnUrl={Uri.EscapeDataString(ReturnUrl)}";
+
+    private async Task CriarConta()
+    {
+        erro = null;
+
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(senha))
+        {
+            erro = "Informe e-mail e senha.";
+            return;
+        }
+
+        if (senha != confirmacao)
+        {
+            erro = "As senhas não conferem.";
+            return;
+        }
+
+        enviando = true;
+        try
+        {
+            var resposta = await AuthAPI.RegistrarAsync(email.Trim(), senha);
+            if (!resposta.Sucesso)
+            {
+                erro = resposta.Erros?.FirstOrDefault() ?? "Não foi possível criar a conta.";
+                return;
+            }
+
+            Snackbar.Add("Conta criada! Bem-vindo ao ScreenSound.", Severity.Success);
+            Navigation.NavigateTo("/");
+        }
+        catch (HttpRequestException)
+        {
+            erro = "Não foi possível conectar ao servidor. Tente novamente em instantes.";
+        }
+        finally
+        {
+            enviando = false;
+        }
+    }
+}

@@ -1,66 +1,141 @@
-﻿@page "/login"
-@inject AuthAPI authAPI
-@inject NavigationManager navigationManager
+@page "/login"
+@inject AuthAPI AuthAPI
+@inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @attribute [AllowAnonymous]
 
+<PageTitle>Entrar · ScreenSound</PageTitle>
 
-<MudPaper Class="px-8 pt-2 pb-4 mx-16 my-8" Justify="Justify.Center">
+<div class="ss-auth">
+    <div class="ss-auth-card">
+        <Logo />
 
-    <AuthorizeView>
-        <Authorized>
-            <p>Você está conectado como @context.User.Identity!.Name</p>
-        </Authorized>
-        <NotAuthorized>
-            <MudForm>
+        <AuthorizeView>
+            <Authorized>
+                <h1>Você já está conectado</h1>
+                <p class="sub">Conectado como <strong>@context.User.Identity?.Name</strong>.</p>
+                <a href="/" class="ss-btn ss-btn-primario ss-btn-lg ss-btn-bloco">Ir para o início</a>
+                <div class="ss-auth-rodape"><a class="ss-link-laranja" href="/logout">Sair desta conta</a></div>
+            </Authorized>
+            <NotAuthorized>
+                <h1>Bem-vindo de volta</h1>
+                <p class="sub">Entre para ouvir, avaliar e montar suas playlists.</p>
 
-                <MudTextField T="string" Label="Email" @bind-Value="Email"
-                              Variant="Variant.Outlined" Class="my-4"
-                              Required="true" RequiredError="Email obrigatório!"
-                              OnlyValidateIfDirty="true" />
+                @if (erro is not null)
+                {
+                    <div class="ss-erro" role="alert">@erro</div>
+                }
 
-                <MudTextField T="string" Label="Senha" @bind-Value="Senha"
-                              InputType="InputType.Password"
-                              Variant="Variant.Outlined" Class="my-4"
-                              Required="true" RequiredError="Senha obrigatória!"
-                              OnlyValidateIfDirty="true" />
+                <form @onsubmit="Entrar">
+                    <div class="ss-input-grupo">
+                        <label for="email">E-mail</label>
+                        <input id="email" class="ss-input" type="email" autocomplete="email" placeholder="voce@email.com" @bind="email" required />
+                    </div>
+                    <div class="ss-input-grupo">
+                        <label for="senha">Senha</label>
+                        <input id="senha" class="ss-input" type="password" autocomplete="current-password" placeholder="Sua senha" @bind="senha" required />
+                    </div>
+                    <button type="submit" class="ss-btn ss-btn-primario ss-btn-lg ss-btn-bloco" disabled="@enviando">
+                        @(enviando ? "Entrando..." : "Entrar")
+                    </button>
+                </form>
 
-                <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                           Class="my-6" @onclick="FazerLogin">
-                    Login
-                </MudButton>
+                <div class="ss-separador"><span>ou explore sem criar conta</span></div>
+                <div class="ss-demo-botoes">
+                    <button type="button" class="ss-btn ss-btn-contorno ss-demo" disabled="@enviando" @onclick="() => EntrarComDemo(false)">
+                        <Icone Svg="@Icons.Material.Filled.Headphones" />
+                        <span><strong>Demo ouvinte</strong><small>Ouve, avalia e cria playlists</small></span>
+                    </button>
+                    <button type="button" class="ss-btn ss-btn-contorno ss-demo" disabled="@enviando" @onclick="() => EntrarComDemo(true)">
+                        <Icone Svg="@Icons.Material.Filled.AdminPanelSettings" />
+                        <span><strong>Demo admin</strong><small>Também gerencia o catálogo</small></span>
+                    </button>
+                </div>
 
-            </MudForm>
-        </NotAuthorized>
-
-    </AuthorizeView>
-
-</MudPaper>
+                <div class="ss-auth-rodape">
+                    Novo por aqui? <a class="ss-link-laranja" href="@LinkCadastro">Criar conta</a>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</div>
 
 @code {
-    private string? Email;
-    private string? Senha;
+    // Contas públicas de demonstração (criadas pela API a partir da seção "Acesso:ContasDemo")
+    private static readonly (string Email, string Senha) DemoAdmin = ("edson@email.com", "Senh@123");
+    private static readonly (string Email, string Senha) DemoOuvinte = ("ouvinte@screensound.com", "Ouvinte@123");
+
+    private string? email;
+    private string? senha;
+    private string? erro;
+    private bool enviando;
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
-    private async Task FazerLogin()
+    /// <summary>"ouvinte" ou "admin": entra direto com a conta demo correspondente.</summary>
+    [SupplyParameterFromQuery(Name = "demo")]
+    private string? Demo { get; set; }
+
+    private string LinkCadastro => string.IsNullOrEmpty(ReturnUrl) ? "/registrar" : $"/registrar?ReturnUrl={Uri.EscapeDataString(ReturnUrl)}";
+
+    protected override async Task OnInitializedAsync()
     {
+        if (Demo is "ouvinte" or "admin" && !await AuthAPI.IsAuthenticated())
+        {
+            await EntrarComDemo(Demo == "admin");
+        }
+    }
+
+    private Task EntrarComDemo(bool admin)
+    {
+        (email, senha) = admin ? DemoAdmin : DemoOuvinte;
+        return Entrar();
+    }
+
+    private async Task Entrar()
+    {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(senha))
+        {
+            erro = "Informe e-mail e senha.";
+            return;
+        }
+
+        enviando = true;
+        erro = null;
+
         try
         {
-            var resposta = await authAPI.LoginAsync(Email!, Senha!);
-            if (resposta.Sucesso)
+            var resposta = await AuthAPI.LoginAsync(email.Trim(), senha);
+            if (!resposta.Sucesso)
             {
-                if (ReturnUrl is not null) {
-                navigationManager.NavigateTo(ReturnUrl);
+                erro = resposta.Erros?.FirstOrDefault() ?? "Não foi possível entrar.";
+                return;
             }
-            }
-            Snackbar.Add("Login realizado com sucesso!", Severity.Success);
+
+            Snackbar.Add("Que bom te ver por aqui!", Severity.Success);
+            Navigation.NavigateTo(DestinoSeguro(ReturnUrl));
         }
-		catch (Exception ex)
-		{
-			Snackbar.Add(ex.Message, Severity.Error);
-			return;
+        catch (HttpRequestException)
+        {
+            erro = "Não foi possível conectar ao servidor. Tente novamente em instantes.";
         }
-	}
+        finally
+        {
+            enviando = false;
+        }
+    }
+
+    // Evita redirecionamento para domínios externos via ReturnUrl
+    private string DestinoSeguro(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return "/";
+
+        var destino = Navigation.ToAbsoluteUri(url);
+        var baseUri = new Uri(Navigation.BaseUri);
+        if (destino.Host != baseUri.Host) return "/";
+
+        var relativo = Navigation.ToBaseRelativePath(destino.ToString());
+        return relativo.StartsWith("login", StringComparison.OrdinalIgnoreCase) ? "/" : "/" + relativo;
+    }
 }

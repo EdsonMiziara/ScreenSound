@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using ScreenSound.API.Request;
 using ScreenSound.API.Requests;
 using ScreenSound.API.Response;
+using ScreenSound.API.Seguranca;
 using ScreenSound.Banco;
 using ScreenSound.Modelos;
 using ScreenSound.Shared.Data.Banco; 
 using ScreenSound.Shared.Data.Modelos;
+using ScreenSound.Shared.Modelos.Auxiliar;
 using ScreenSound.Web.Response;
 using System.Security.Claims;
 
@@ -43,30 +45,39 @@ public static class MusicaExtensions
         });
 
         grupo.MapPost("/", async (
-            [FromServices] IUnitOfWork uow, 
+            [FromServices] IUnitOfWork uow,
             [FromServices] DAL<Musica> dal,
             [FromServices] DAL<Genero> dalGenero,
             [FromBody] MusicaRequest musicaRequest) =>
         {
-            var musica = new Musica(musicaRequest.nome)
+            try
             {
-                ArtistaId = musicaRequest.ArtistaId,
-                AnoLancamento = musicaRequest.anoLancamento,
-                Generos = musicaRequest.Generos is not null
-                    ? await GeneroRequestConverter(musicaRequest.Generos, dalGenero)
-                    : new List<Genero>()
-            };
+                var musica = new Musica(musicaRequest.nome)
+                {
+                    ArtistaId = musicaRequest.ArtistaId,
+                    AnoLancamento = musicaRequest.anoLancamento,
+                    Generos = musicaRequest.Generos is not null
+                        ? await GeneroRequestConverter(musicaRequest.Generos, dalGenero, uow)
+                        : new List<Genero>(),
+                    SpotifyUrl = musicaRequest.SpotifyUrl
+                };
 
-            if (!musica.EhValido)
-            {
-                return Results.BadRequest(musica.Erros.Sumario);
+                if (!musica.EhValido)
+                {
+                    return Results.BadRequest(musica.Erros.Sumario);
+                }
+
+                dal.Adicionar(musica);
+                await uow.CommitAsync();
+
+                return Results.Created();
             }
-
-            dal.Adicionar(musica);
-            await uow.CommitAsync(); 
-
-            return Results.Created(); 
-        });
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERRO AO CADASTRAR MÚSICA: {ex.Message} --- {ex.InnerException?.Message}");
+                throw; 
+            }
+        }).RequireAuthorization(Politicas.Admin);
 
         grupo.MapPut("/", async (
             [FromServices] IUnitOfWork uow, 
@@ -86,11 +97,12 @@ public static class MusicaExtensions
             musicaAAtualizar.Nome = musicaRequestEdit.nome;
             musicaAAtualizar.AnoLancamento = musicaRequestEdit.anoLancamento;
             musicaAAtualizar.ArtistaId = musicaRequestEdit.ArtistaId;
-            musicaAAtualizar.Generos.Clear(); 
+            musicaAAtualizar.Generos.Clear();
+            musicaAAtualizar.SpotifyUrl = musicaRequestEdit.SpotifyUrl is not null ? musicaRequestEdit.SpotifyUrl : musicaAAtualizar.SpotifyUrl;
 
             if (musicaRequestEdit.Generos is not null)
             {
-                var novosGeneros = await GeneroRequestConverter(musicaRequestEdit.Generos, dalGenero);
+                var novosGeneros = await GeneroRequestConverter(musicaRequestEdit.Generos, dalGenero, uow);
                 foreach (var genero in novosGeneros)
                 {
                     musicaAAtualizar.Generos.Add(genero);
@@ -105,7 +117,7 @@ public static class MusicaExtensions
             await uow.CommitAsync(); 
 
             return Results.Ok();
-        });
+        }).RequireAuthorization(Politicas.Admin);
 
         grupo.MapDelete("/{id}", async (
             [FromServices] IUnitOfWork uow, 
@@ -119,7 +131,7 @@ public static class MusicaExtensions
             await uow.CommitAsync(); 
 
             return Results.NoContent();
-        });
+        }).RequireAuthorization(Politicas.Admin);
 
         grupo.MapPost("/Avaliacao/{MusicaId}", async ( 
             HttpContext context,
@@ -195,22 +207,27 @@ public static class MusicaExtensions
         });
     }
 
-    // --- Métodos Helper ---
 
     /// <summary>
     /// Converte GeneroRequest em entidade Genero, reutilizando ou criando.
     /// Refatorado para ser async e usar RecuperarParaEdicaoAsync para rastrear entidades.
     /// </summary>
+    /// <summary>
+    /// Converte GeneroRequest em entidade Genero, reutilizando ou criando e salvando na hora.
+    /// </summary>
     private static async Task<ICollection<Genero>> GeneroRequestConverter(
         ICollection<GeneroRequest> generos,
-        DAL<Genero> dalGenero)
+        DAL<Genero> dalGenero,
+        IUnitOfWork uow)
     {
         var listaDeGeneros = new List<Genero>();
+        bool temNovoGenero = false;
 
         foreach (var item in generos)
         {
+            var nomeItem = item.Nome.Trim().ToLower();
             var generoExistente = await dalGenero.RecuperarParaEdicaoAsync(
-                g => g.Nome!.Equals(item.Nome, StringComparison.OrdinalIgnoreCase));
+                g => g.Nome!.ToLower() == nomeItem);
 
             if (generoExistente is not null)
             {
@@ -219,9 +236,15 @@ public static class MusicaExtensions
             else
             {
                 var novoGenero = RequestToEntity(item);
-                dalGenero.Adicionar(novoGenero); 
+                dalGenero.Adicionar(novoGenero);
                 listaDeGeneros.Add(novoGenero);
+                temNovoGenero = true;
             }
+        }
+
+        if (temNovoGenero)
+        {
+            await uow.CommitAsync();
         }
 
         return listaDeGeneros;
@@ -250,7 +273,7 @@ public static class MusicaExtensions
         return musicaList.Select(a => EntityToResponse(a)).ToList();
     }
 
-    private static MusicaResponse EntityToResponse(Musica musica)
+    internal static MusicaResponse EntityToResponse(Musica musica)
     {
         var generos = musica.Generos is not null
             ? EntityListToResponseListGenero(musica.Generos)
@@ -259,8 +282,9 @@ public static class MusicaExtensions
         var artistaId = musica.Artista?.Id ?? 0;
         var artistaNome = musica.Artista?.Nome ?? "Desconhecido";
 
-        return new MusicaResponse(musica.Id, musica.Nome, artistaId, artistaNome, generos)
+        return new MusicaResponse(musica.Id, musica.Nome, artistaId, artistaNome, generos, musica.SpotifyUrl)
         {
+            AnoLancamento = musica.AnoLancamento,
             Classificacao = musica.Notas?.Select(a => a.Nota).DefaultIfEmpty(0).Average() ?? 0
         };
     }

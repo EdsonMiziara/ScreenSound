@@ -1,0 +1,55 @@
+@implements IDisposable
+@inject PlayerService Player
+@inject ISnackbar Snackbar
+
+<div class="ss-linha @(EhAtual ? "atual" : null)" @ondblclick="Tocar">
+    @if (Numero is int numero)
+    {
+        <span class="ss-linha-num">
+            <span class="ss-linha-num-texto">@numero</span>
+            <BotaoPlay Musica="Musica" Lista="Contexto" Tamanho="sm" />
+        </span>
+    }
+    <a href="@Rotas.Musica(Musica.Nome)" class="ss-capa-wrap" tabindex="-1">
+        <Capa SpotifyUrl="@Musica.SpotifyUrl" Semente="@Musica.Nome" />
+    </a>
+    <div class="ss-linha-textos">
+        <a class="ss-linha-nome" href="@Rotas.Musica(Musica.Nome)">@Musica.Nome</a>
+        <a class="ss-linha-sub" href="@Rotas.Artista(Musica.NomeArtista)">@(Musica.NomeArtista ?? "Artista desconhecido")</a>
+    </div>
+    @if (EhAtual)
+    {
+        <span class="ss-eq @(Player.Tocando ? null : "pausado")"><i></i><i></i><i></i></span>
+    }
+    @if (Acoes is not null)
+    {
+        <div class="ss-linha-acoes">@Acoes</div>
+    }
+    @if (Numero is null)
+    {
+        <BotaoPlay Musica="Musica" Lista="Contexto" Tamanho="sm" />
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public MusicaResponse Musica { get; set; } = default!;
+    [Parameter] public IEnumerable<MusicaResponse>? Contexto { get; set; }
+    [Parameter] public int? Numero { get; set; }
+    [Parameter] public RenderFragment? Acoes { get; set; }
+
+    private bool EhAtual => Player.Atual?.Id == Musica.Id;
+
+    protected override void OnInitialized() => Player.OnMudanca += AoMudar;
+
+    private void AoMudar() => InvokeAsync(StateHasChanged);
+
+    private async Task Tocar()
+    {
+        if (!await Player.TocarAsync(Musica, Contexto))
+        {
+            Snackbar.Add("Esta faixa ainda não tem um link do Spotify.", Severity.Info);
+        }
+    }
+
+    public void Dispose() => Player.OnMudanca -= AoMudar;
+}

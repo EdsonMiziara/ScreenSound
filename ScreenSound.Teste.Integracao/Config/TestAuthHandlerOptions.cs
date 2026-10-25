@@ -12,7 +12,7 @@ public class TestAuthHandlerOptions : AuthenticationSchemeOptions
 {
     public string DefaultUserId { get; set; } = "testuser";
     public string DefaultUserName { get; set; } = "Test User";
-    public string DefaultRole { get; set; } = "Admin"; // Role padrão para o usuário de teste
+    public string DefaultRole { get; set; } = "Administrador"; // Role padrão para o usuário de teste (acesso ao catálogo)
 }
 
 // Manipulador de autenticação que intercepta requisições e as marca como autenticadas
@@ -32,6 +32,14 @@ public class TestAuthHandler : AuthenticationHandler<TestAuthHandlerOptions>
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        // Só autentica quem envia "Authorization: TestScheme ..." (ver CreateClientAuthorized);
+        // sem o cabeçalho a requisição segue anônima e recebe 401 nas rotas protegidas.
+        var cabecalho = Request.Headers.Authorization.ToString();
+        if (!cabecalho.StartsWith(SchemeName, StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(AuthenticateResult.NoResult());
+        }
+
         // Cria as claims (informações) para o usuário de teste
         var claims = new[]
         {

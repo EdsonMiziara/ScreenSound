@@ -1,64 +1,199 @@
 ﻿@page "/Musicas"
-@inject MusicaAPI musicaAPI
-@inject ArtistaAPI artistaAPI
+@inject MusicaAPI MusicaAPI
+@inject PlayerService Player
+@inject ISnackbar Snackbar
 
+<PageTitle>Faixas · ScreenSound</PageTitle>
 
-<MudStack Class="mt-4 mb-4" Row="true" Justify="Justify.SpaceBetween">
-	<MudText Class="mb-4" Typo="Typo.h4">Musicas cadastradas</MudText>
-	<MudPagination Count="@totalPaginas" SelectedChanged="PaginaMudou"></MudPagination>
-</MudStack>
+<div class="ss-container ss-pagina">
+    <div class="ss-cab-pagina">
+        <div>
+            <h1 class="ss-titulo-pagina">Faixas</h1>
+            <p class="ss-secao-sub">
+                @if (musicas is not null)
+                {
+                    @Visual.Plural(musicas.Count, "faixa no catálogo", "faixas no catálogo")
+                }
+            </p>
+        </div>
+        <div class="ss-faixa-acoes">
+            <button class="ss-btn ss-btn-primario" @onclick="TocarTudo" disabled="@(filtradas.Count == 0)">
+                <Icone Svg="@Icons.Material.Filled.PlayArrow" /> Tocar tudo
+            </button>
+            <button class="ss-btn ss-btn-contorno" @onclick="Embaralhar" disabled="@(filtradas.Count == 0)">
+                <Icone Svg="@Icons.Material.Filled.Shuffle" /> Aleatório
+            </button>
+            <a class="ss-btn ss-btn-contorno" href="/CadastrarMusica">
+                <Icone Svg="@Icons.Material.Filled.CloudUpload" /> Enviar faixa
+            </a>
+        </div>
+    </div>
 
+    <div class="ss-toolbar">
+        <div class="ss-campo-busca">
+            <Icone Svg="@Icons.Material.Filled.FilterList" />
+            <input class="ss-campo" type="search" placeholder="Filtrar por nome ou artista" aria-label="Filtrar faixas"
+                   @bind="filtro" @bind:event="oninput" @bind:after="Filtrar" />
+        </div>
+        <select class="ss-campo" aria-label="Ordenar por" @bind="ordem" @bind:after="Filtrar">
+            <option value="recentes">Mais recentes</option>
+            <option value="avaliacao">Melhor avaliadas</option>
+            <option value="az">Nome (A–Z)</option>
+            <option value="ano-desc">Lançamento (mais novo)</option>
+            <option value="ano-asc">Lançamento (mais antigo)</option>
+        </select>
+        <label class="ss-switch">
+            <input type="checkbox" @bind="soTocaveis" @bind:after="Filtrar" />
+            <span class="trilho"></span>
+            Só com player
+        </label>
+    </div>
 
-@if (musicasPorPagina == null)
-{
-	<p>❌ A lista de musicas está nula.</p>
-}
-else if (!musicasPorPagina.Any())
-{
-	<p>⚠️ Nenhum artista encontrado.</p>
-}
-else if (musicasPorPagina is not null)
-{
-	<p>✅ Total de musicas: @musicasPorPagina.Count</p>
-	<MudGrid>
-		@foreach (var musica in musicasPorPagina)
-		{
-			<MudItem xs="3">
-				<CardMusica Musica ="musica" />
-			</MudItem>
-		}
-	</MudGrid>
-}
+    @if (generos.Count > 0)
+    {
+        <div class="ss-chips" role="toolbar" aria-label="Filtrar por gênero">
+            <button class="ss-chip @(generoAtivo is null ? "ativo" : null)" @onclick="() => SelecionarGenero(null)">Todos</button>
+            @foreach (var genero in generos)
+            {
+                <button class="ss-chip @(string.Equals(generoAtivo, genero, StringComparison.OrdinalIgnoreCase) ? "ativo" : null)"
+                        @onclick="() => SelecionarGenero(genero)">@genero</button>
+            }
+        </div>
+    }
+
+    @if (musicas is null)
+    {
+        <SkeletonFaixas />
+    }
+    else if (musicas.Count == 0)
+    {
+        <EstadoVazio Titulo="O catálogo está vazio" Texto="Que tal enviar a primeira faixa?">
+            <a href="/CadastrarMusica" class="ss-btn ss-btn-primario">Enviar faixa</a>
+        </EstadoVazio>
+    }
+    else if (filtradas.Count == 0)
+    {
+        <EstadoVazio Icone="@Icons.Material.Filled.SearchOff" Titulo="Nenhuma faixa encontrada" Texto="Tente outro filtro ou gênero.">
+            <button class="ss-btn ss-btn-contorno" @onclick="Limpar">Limpar filtros</button>
+        </EstadoVazio>
+    }
+    else
+    {
+        @foreach (var musica in filtradas.Take(visiveis))
+        {
+            <FaixaLinha @key="musica.Id" Musica="musica" Contexto="filtradas" />
+        }
+
+        @if (filtradas.Count > visiveis)
+        {
+            <div class="ss-mais">
+                <button class="ss-btn ss-btn-contorno" @onclick="() => visiveis += TamanhoPagina">
+                    Carregar mais (@(filtradas.Count - visiveis) restantes)
+                </button>
+            </div>
+        }
+    }
+</div>
 
 @code {
-	private ICollection<MusicaResponse>? musicas;
-	private ICollection<MusicaResponse>? musicasPorPagina;
-	private ICollection<ArtistaResponse>? artistas;
+    private const int TamanhoPagina = 10;
 
-	private int tamanho = 8;
-	private int totalItens;
-	private int totalPaginas;
+    [SupplyParameterFromQuery(Name = "genero")]
+    private string? GeneroQuery { get; set; }
 
-	protected override async Task OnInitializedAsync()
-	{
-		musicas = await musicaAPI.GetMusicasAsync();
-		if (musicas is not null)
-		{
-			musicas = musicas.OrderByDescending(a => a.Id).ToList();
-			totalItens = musicas.Count();
-			totalPaginas = Convert.ToInt32(Math.Ceiling((double)totalItens / tamanho));
-			this.PaginaMudou(1);
-		}
+    private List<MusicaResponse>? musicas;
+    private List<MusicaResponse> filtradas = new();
+    private List<string> generos = new();
+    private string? generoAtivo;
+    private string? filtro;
+    private string ordem = "recentes";
+    private bool soTocaveis;
+    private int visiveis = TamanhoPagina;
 
-	}
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            musicas = (await MusicaAPI.GetMusicasAsync()).ToList();
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("Não foi possível carregar as faixas. Tente novamente.", Severity.Error);
+            musicas = new();
+        }
 
-	private void PaginaMudou(int pageNumber)
-	{
-		var indice = pageNumber - 1;
-		musicasPorPagina = musicas!.Skip(indice * tamanho).Take(tamanho).ToList();
+        generos = musicas
+            .SelectMany(m => m.Generos)
+            .GroupBy(g => g.Nome.Trim(), StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(g => g.Count())
+            .Select(g => g.Key)
+            .ToList();
+    }
 
-	}
-	
+    protected override void OnParametersSet()
+    {
+        generoAtivo = string.IsNullOrWhiteSpace(GeneroQuery) ? null : GeneroQuery;
+        Filtrar();
+    }
 
+    private void SelecionarGenero(string? genero)
+    {
+        generoAtivo = genero;
+        Filtrar();
+    }
 
+    private void Limpar()
+    {
+        filtro = null;
+        generoAtivo = null;
+        soTocaveis = false;
+        Filtrar();
+    }
+
+    private void Filtrar()
+    {
+        if (musicas is null) return;
+
+        IEnumerable<MusicaResponse> consulta = musicas;
+
+        if (!string.IsNullOrWhiteSpace(filtro))
+        {
+            var termo = filtro.Trim();
+            consulta = consulta.Where(m => Visual.Contem(m.Nome, termo) || Visual.Contem(m.NomeArtista, termo));
+        }
+
+        if (generoAtivo is not null)
+        {
+            consulta = consulta.Where(m => m.Generos.Any(g => string.Equals(g.Nome.Trim(), generoAtivo, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        if (soTocaveis)
+        {
+            consulta = consulta.Where(m => m.Tocavel);
+        }
+
+        consulta = ordem switch
+        {
+            "avaliacao" => consulta.OrderByDescending(m => m.Classificacao ?? 0).ThenByDescending(m => m.Id),
+            "az" => consulta.OrderBy(m => m.Nome, StringComparer.CurrentCultureIgnoreCase),
+            "ano-desc" => consulta.OrderByDescending(m => m.AnoLancamento ?? 0),
+            "ano-asc" => consulta.OrderBy(m => m.AnoLancamento is > 0 ? m.AnoLancamento : int.MaxValue),
+            _ => consulta.OrderByDescending(m => m.Id)
+        };
+
+        filtradas = consulta.ToList();
+        visiveis = TamanhoPagina;
+    }
+
+    private async Task TocarTudo()
+    {
+        if (!await Player.TocarListaAsync(filtradas))
+            Snackbar.Add("Nenhuma destas faixas tem link do Spotify.", Severity.Info);
+    }
+
+    private async Task Embaralhar()
+    {
+        if (!await Player.TocarListaAsync(filtradas, embaralhar: true))
+            Snackbar.Add("Nenhuma destas faixas tem link do Spotify.", Severity.Info);
+    }
 }

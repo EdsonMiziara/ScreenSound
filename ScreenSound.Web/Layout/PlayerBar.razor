@@ -1,0 +1,118 @@
+@implements IDisposable
+@inject PlayerService Player
+
+<section class="ss-player @(Player.Atual is not null ? "visivel" : null)" aria-label="Player">
+    <div class="ss-player-progresso" style="width:@Visual.Porcentagem(Player.Progresso)"></div>
+    <div class="ss-container ss-player-inner">
+        <div class="ss-player-controles">
+            <button class="ss-btn-icone" title="Anterior" aria-label="Anterior" @onclick="Player.AnteriorAsync">
+                <Icone Svg="@Icons.Material.Filled.SkipPrevious" />
+            </button>
+            <button class="ss-btn-icone" style="color:var(--ss-texto)" title="@(Player.Tocando ? "Pausar" : "Tocar")" aria-label="@(Player.Tocando ? "Pausar" : "Tocar")" @onclick="Player.AlternarAsync">
+                <Icone Svg="@(Player.Tocando ? Icons.Material.Filled.Pause : Icons.Material.Filled.PlayArrow)" />
+            </button>
+            <button class="ss-btn-icone" title="Próxima" aria-label="Próxima" disabled="@(!Player.TemProxima)" @onclick="Player.ProximaAsync">
+                <Icone Svg="@Icons.Material.Filled.SkipNext" />
+            </button>
+        </div>
+
+        <div class="ss-player-tempo">
+            <b>@Visual.FormatarTempo(Player.Posicao)</b> / @Visual.FormatarTempo(Player.Duracao)
+        </div>
+
+        @* O iFrame do embed é injetado aqui via JS; no modo Premium (Web Playback SDK) ele fica oculto *@
+        <div class="ss-player-embed @(Player.Premium ? "oculto" : null)" id="@PlayerService.HostId"></div>
+
+        @if (Player.Premium)
+        {
+            <div class="ss-player-barra">
+                <span class="ss-premium-selo" title="@(Player.ContaSpotify is null ? "Spotify Premium" : $"Spotify Premium · {Player.ContaSpotify}")">Premium</span>
+                <input type="range" min="0" max="1000" aria-label="Posição da faixa"
+                       value="@((int)(Player.Progresso * 1000))"
+                       style="--progresso:@Visual.Porcentagem(Player.Progresso)"
+                       @onchange="Buscar" />
+            </div>
+        }
+
+        @if (Player.Atual is { } atual)
+        {
+            <div class="ss-player-info">
+                <a href="@Rotas.Musica(atual.Nome)"><Capa SpotifyUrl="@atual.SpotifyUrl" Semente="@atual.Nome" /></a>
+                <div class="textos">
+                    <a class="artista" href="@Rotas.Artista(atual.NomeArtista)">@atual.NomeArtista</a>
+                    <a class="nome" href="@Rotas.Musica(atual.Nome)" title="@atual.Nome">@atual.Nome</a>
+                </div>
+                <ControleVolume />
+                <div class="ss-dropdown">
+                    <button class="ss-btn-icone @(filaAberta ? "ativo" : null)" title="Fila de reprodução" aria-label="Fila de reprodução" @onclick="() => filaAberta = !filaAberta">
+                        <Icone Svg="@Icons.Material.Filled.QueueMusic" />
+                    </button>
+                    @if (filaAberta)
+                    {
+                        <div class="ss-dropdown-fundo" @onclick="() => filaAberta = false"></div>
+                        <div class="ss-fila">
+                            <div class="ss-fila-cab">
+                                <span>A seguir <span class="ss-muted" style="font-weight:500">· @Visual.Plural(Player.Fila.Count, "faixa", "faixas")</span></span>
+                                <button class="ss-btn-icone" aria-label="Fechar fila" @onclick="() => filaAberta = false"><Icone Svg="@Icons.Material.Filled.Close" /></button>
+                            </div>
+                            <div class="ss-fila-lista">
+                                @for (var i = 0; i < Player.Fila.Count; i++)
+                                {
+                                    var indice = i;
+                                    var musica = Player.Fila[i];
+                                    <div class="ss-linha @(indice == Player.Indice ? "atual" : null)" style="cursor:pointer" @key="musica.Id" @onclick="() => Player.IrParaAsync(indice)">
+                                        <span class="ss-linha-num">@(indice + 1)</span>
+                                        <Capa SpotifyUrl="@musica.SpotifyUrl" Semente="@musica.Nome" />
+                                        <div class="ss-linha-textos">
+                                            <span class="ss-linha-nome">@musica.Nome</span>
+                                            <span class="ss-linha-sub">@musica.NomeArtista</span>
+                                        </div>
+                                        @if (indice == Player.Indice)
+                                        {
+                                            <span class="ss-eq @(Player.Tocando ? null : "pausado")"><i></i><i></i><i></i></span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+                <button class="ss-btn-icone" title="Fechar player" aria-label="Fechar player" @onclick="Fechar">
+                    <Icone Svg="@Icons.Material.Filled.Close" />
+                </button>
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    private bool filaAberta;
+
+    protected override void OnInitialized()
+    {
+        Player.OnMudanca += Atualizar;
+        Player.OnProgresso += Atualizar;
+    }
+
+    private void Atualizar() => InvokeAsync(StateHasChanged);
+
+    private async Task Buscar(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var milesimos))
+        {
+            await Player.BuscarAsync(milesimos / 1000d);
+        }
+    }
+
+    private async Task Fechar()
+    {
+        filaAberta = false;
+        await Player.FecharAsync();
+    }
+
+    public void Dispose()
+    {
+        Player.OnMudanca -= Atualizar;
+        Player.OnProgresso -= Atualizar;
+    }
+}

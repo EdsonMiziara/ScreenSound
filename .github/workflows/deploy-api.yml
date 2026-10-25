@@ -22,6 +22,9 @@ jobs:
       with:
         dotnet-version: '9.0.x'
 
+    - name: Testes unitários (o deploy só acontece se passarem)
+      run: dotnet test ScreenSound.Teste/ScreenSound.Teste.csproj -c Release
+
     - name: Restaurar dependências
       run: dotnet restore ScreenSound.API/ScreenSound.API.csproj
 

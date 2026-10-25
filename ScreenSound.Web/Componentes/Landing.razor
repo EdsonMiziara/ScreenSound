@@ -1,0 +1,100 @@
+@attribute [AllowAnonymous]
+
+<section class="ss-landing-hero">
+    <div class="ss-landing-onda" aria-hidden="true">
+        <Waveform Musica="ondaDecorativa" Barras="220" Decorativa="true" />
+    </div>
+    <div class="ss-container">
+        <div class="ss-landing-conteudo">
+            <span class="ss-landing-selo"><i></i> Player integrado ao Spotify</span>
+            <h1 class="ss-landing-titulo">O som que <span>move você</span>, organizado do seu jeito.</h1>
+            <p class="ss-landing-sub">
+                Descubra artistas, ouça faixas direto no navegador e monte playlists para cada momento.
+                Avalie o que você ouve e compartilhe com a comunidade.
+            </p>
+            <div class="ss-landing-ctas">
+                <a href="/registrar" class="ss-btn ss-btn-primario ss-btn-lg">Criar conta grátis</a>
+                <a href="/login?demo=ouvinte" class="ss-btn ss-btn-branco ss-btn-lg">
+                    <Icone Svg="@Icons.Material.Filled.PlayArrow" /> Explorar como ouvinte
+                </a>
+                <a href="/login?demo=admin" class="ss-btn ss-btn-contorno ss-btn-lg">
+                    <Icone Svg="@Icons.Material.Filled.AdminPanelSettings" /> Explorar como admin
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="ss-container ss-pagina">
+    <section class="ss-secao">
+        <div class="ss-secao-cab">
+            <div>
+                <h2 class="ss-secao-titulo">Tudo o que você precisa para ouvir melhor</h2>
+                <p class="ss-secao-sub">Feito para quem vive de música — e para quem quer descobrir mais.</p>
+            </div>
+        </div>
+        <div class="ss-recursos">
+            <div class="ss-recurso">
+                <div class="ss-recurso-icone"><Icone Svg="@Icons.Material.Filled.QueueMusic" /></div>
+                <h3>Playlists do seu jeito</h3>
+                <p>Crie playlists públicas ou privadas, reordene faixas e descubra o que a comunidade está montando.</p>
+            </div>
+            <div class="ss-recurso">
+                <div class="ss-recurso-icone"><Icone Svg="@Icons.Material.Filled.GraphicEq" /></div>
+                <h3>Player contínuo</h3>
+                <p>Toque uma faixa ou uma playlist inteira com fila de reprodução que segue com você por todo o app.</p>
+            </div>
+            <div class="ss-recurso">
+                <div class="ss-recurso-icone"><Icone Svg="@Icons.Material.Filled.Star" /></div>
+                <h3>Avalie e descubra</h3>
+                <p>Dê notas para artistas e faixas, filtre por gênero e encontre o próximo som favorito.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="ss-secao">
+        <div class="ss-secao-cab" style="justify-content:center;text-align:center">
+            <div>
+                <h2 class="ss-secao-titulo">Um projeto full stack em .NET</h2>
+                <p class="ss-secao-sub">Front-end em Blazor WebAssembly, API em ASP.NET Core e banco Azure SQL, com perfis de ouvinte e administrador.</p>
+            </div>
+        </div>
+        <div class="ss-stack-faixa">
+            @foreach (var (nome, cor) in stack)
+            {
+                <span class="ss-stack-item"><i style="background:@cor"></i>@nome</span>
+            }
+        </div>
+    </section>
+
+    <div class="ss-centro" style="margin:-20px 0 48px">
+        <a href="/Sobre" class="ss-btn ss-btn-contorno">Conheça a arquitetura e as decisões técnicas →</a>
+    </div>
+
+    <section class="ss-cta-final">
+        <h2>Pronto para dar o play?</h2>
+        <p>Crie sua conta em segundos e comece a montar sua primeira playlist.</p>
+        <div class="ss-landing-ctas" style="justify-content:center">
+            <a href="/registrar" class="ss-btn ss-btn-primario ss-btn-lg">Criar conta</a>
+            <a href="/login" class="ss-btn ss-btn-contorno ss-btn-lg">Já tenho conta</a>
+        </div>
+    </section>
+</div>
+
+@code {
+    private readonly MusicaResponse ondaDecorativa = new(42, "ScreenSound", 0, null, new List<GeneroResponse>());
+
+    private readonly (string Nome, string Cor)[] stack =
+    {
+        (".NET 9", "#8b5cf6"),
+        ("ASP.NET Core Minimal APIs", "#a78bfa"),
+        ("Blazor WebAssembly", "#6d28d9"),
+        ("Entity Framework Core", "#3b82f6"),
+        ("SQL Server / Azure SQL", "#ef4444"),
+        ("ASP.NET Identity", "#f59e0b"),
+        ("MudBlazor", "#22c55e"),
+        ("xUnit + Testcontainers", "#ec4899"),
+        ("Docker", "#0ea5e9"),
+        ("GitHub Actions + Azure", "#ff5500")
+    };
+}

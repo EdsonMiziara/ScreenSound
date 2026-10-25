@@ -11,7 +11,7 @@ class MenuMostrarArtistas : Menu
         base.Executar(artistaDAL);
         ExibirTituloDaOpcao("Exibindo todas as bandas registradas na nossa aplicação");
 
-        foreach (var banda in artistaDAL.Listar())
+        foreach (var banda in artistaDAL.ListarComoQueryable())
         {
             Console.WriteLine($"Banda: {banda}");
         }

@@ -1,142 +1,43 @@
-﻿@page "/EditarArtista/{NomeArtista}"
+@page "/EditarArtista/{NomeArtista}"
+@attribute [Authorize(Roles = Perfis.Administrador)]
+@inject ArtistaAPI ArtistaAPI
 
-@inject ArtistaAPI artistasAPI
-@inject NavigationManager navigationManager
-@inject ISnackbar Snackbar
+<PageTitle>Editar artista · ScreenSound</PageTitle>
 
-
-@if (Artista is not null)
-{
-    <MudPaper Class="px-8 pt-2 pb-4 mx-12 my-8" Justify="Justify.Center">
-
-        <MudText Class="mt-8" Typo="Typo.h4">Edição de Artista</MudText>
-
-        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
-
-            <MudTextField Class="mt-4" T="string" Placeholder="Nome do Artista"
-            Variant="Variant.Outlined"
-            @bind-Value="nome"
-            Required="true"
-            RequiredError="Campo obrigatório." />
-
-            <MudTextField Class="mt-4" T="string" Placeholder="Biografia do artista"
-            Variant="Variant.Outlined"
-            @bind-Value="biografia"
-            Lines="4"
-            Required="true"
-            RequiredError="Campo obrigatório." />
-
-            <div class="d-flex align-center justify-space-between mt-4">
-
-
-                <MudRating @bind-SelectedValue="Classificacao"
-                @onclick="AvaliarArtista" />
-
-                <div>
-                    <MudButton Variant="Variant.Filled"
-                    Color="Color.Primary"
-                    Disabled="@(!success)"
-                    Class="ml-auto"
-                    @onclick="Editar">
-                        Salvar
-                    </MudButton>
-                    <MudButton Variant="Variant.Filled"
-                    Color="Color.Warning"
-                    Class="ml-3"
-                    @onclick="Deletar">
-                        Excluir
-                    </MudButton>
-                    <MudButton Variant="Variant.Filled"
-                    Color="Color.Info"
-                    Class="ml-3"
-                    @onclick="VoltarParaListagem">
-                        Voltar
-                    </MudButton>
-                </div>
-            </div>
-
-        </MudForm>
-    </MudPaper>
-}
-else
-{
-    <MudProgressCircular Indeterminate="true"></MudProgressCircular>
-}
+<div class="ss-container ss-pagina">
+    @if (carregando)
+    {
+        <SkeletonFaixas Quantidade="1" />
+    }
+    else if (artista is null)
+    {
+        <EstadoVazio Icone="@Icons.Material.Filled.PersonOff" Titulo="Artista não encontrado" Texto="Ele pode ter sido removido ou renomeado.">
+            <a href="/Artistas" class="ss-btn ss-btn-primario">Ver artistas</a>
+        </EstadoVazio>
+    }
+    else
+    {
+        <FormularioArtista @key="artista.Id" Artista="artista" />
+    }
+</div>
 
 @code {
-    bool success;
-    string[] errors = { };
-    MudForm? form;
-    private string? nome;
-    private string? biografia;
-    [Parameter]
-    public string? NomeArtista { get; set; }
-    private string? fotoPerfil;
-    private int nota;
-    private int Classificacao;
-    public ArtistaResponse? Artista { get; set; }
-    private int id;
+    [Parameter] public string NomeArtista { get; set; } = string.Empty;
 
-    protected override async Task OnInitializedAsync()
-    {
-        Artista = await artistasAPI.GetArtistaPorNomeAsync(NomeArtista!);
-        if (Artista is null)
-        {
-            Snackbar.Add("Artista consultado não encontrado.", Severity.Error);
-            navigationManager.NavigateTo("/Artistas");
-        }
-        nome = Artista!.Nome;
-        biografia = Artista!.Bio;
-        id = Artista!.Id;
-    }
-    protected async override Task OnParametersSetAsync()
-    {
-        Artista = await artistasAPI.GetArtistaPorNomeAsync(NomeArtista!);
-    }
+    private ArtistaResponse? artista;
+    private bool carregando = true;
 
-    private async Task Deletar()
+    protected override async Task OnParametersSetAsync()
     {
+        carregando = true;
         try
         {
-            await artistasAPI.DeleteArtistaAsync(Artista!.Id);
-            Snackbar.Add("Artista excluído com sucesso!", Severity.Success);
-            navigationManager.NavigateTo("/Artistas");
+            artista = await ArtistaAPI.GetArtistaPorNomeAsync(NomeArtista);
         }
-        catch
+        catch (HttpRequestException)
         {
-            // Logger.LogInformation("Erro ao cadastrar artista!");
+            artista = null;
         }
+        carregando = false;
     }
-
-    private async Task Editar()
-    {
-        try {
-            var requestEdit = new ArtistaRequestEdit(Artista!.Id, nome!, biografia!, fotoPerfil!);
-            await artistasAPI.UpdateArtistaAsync(requestEdit);
-            navigationManager.NavigateTo("/Artistas");
-            Snackbar.Add("Artista atualizado com sucesso!", Severity.Success);
-        }
-        catch
-        {
-             // Logger.LogInformation("Erro ao cadastrar artista!");
-        }
-    }
-
-    private void VoltarParaListagem()
-    {
-        navigationManager.NavigateTo("/Artistas");
-    }
-
-	private async Task AvaliarArtista()
-	{
-		try
-		{
-			await artistasAPI.AvaliaArtistaAsync(id, Classificacao);
-			Snackbar.Add("Avaliação enviada com sucesso!", Severity.Success);
-		}
-		catch
-		{
-			// Logger.LogInformation("Erro ao cadastrar artista!");
-		}
-	}
 }

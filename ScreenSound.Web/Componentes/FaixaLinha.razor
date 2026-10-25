@@ -1,0 +1,83 @@
+@implements IDisposable
+@inject PlayerService Player
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<article class="ss-faixa @(Player.Atual?.Id == Musica.Id ? "atual" : null)">
+    <a href="@Rotas.Musica(Musica.Nome)" class="ss-capa-wrap" aria-label="@($"Abrir {Musica.Nome}")">
+        <Capa SpotifyUrl="@Musica.SpotifyUrl" Semente="@Musica.Nome" />
+    </a>
+
+    <div class="ss-faixa-corpo">
+        <div class="ss-faixa-topo">
+            <BotaoPlay Musica="Musica" Lista="Contexto" />
+            <div class="ss-faixa-textos">
+                <a class="ss-faixa-artista" href="@Rotas.Artista(Musica.NomeArtista)">@(Musica.NomeArtista ?? "Artista desconhecido")</a>
+                <a class="ss-faixa-nome" href="@Rotas.Musica(Musica.Nome)">@Musica.Nome</a>
+            </div>
+            <div class="ss-faixa-meta">
+                @if (Player.Atual?.Id == Musica.Id)
+                {
+                    <span class="ss-eq @(Player.Tocando ? null : "pausado")" title="Tocando agora"><i></i><i></i><i></i></span>
+                }
+                @if (Musica.AnoLancamento is > 0)
+                {
+                    <span class="ss-ano">@Musica.AnoLancamento</span>
+                }
+                @if (Musica.Generos.FirstOrDefault() is { } genero)
+                {
+                    <a class="ss-tag hash" href="@Rotas.Genero(genero.Nome)">@genero.Nome</a>
+                }
+            </div>
+        </div>
+
+        <Waveform Musica="Musica" Contexto="Contexto" Class="compacta" Barras="160" MostrarTempo="true" />
+
+        <div class="ss-faixa-rodape">
+            <div class="ss-faixa-acoes">
+                <button class="ss-btn ss-btn-contorno ss-btn-sm" @onclick="AdicionarAPlaylist">
+                    <Icone Svg="@Icons.Material.Filled.PlaylistAdd" /> Playlist
+                </button>
+                <button class="ss-btn ss-btn-contorno ss-btn-sm" @onclick="AdicionarNaFila" disabled="@(!Musica.Tocavel)" title="Tocar em seguida">
+                    <Icone Svg="@Icons.Material.Filled.QueueMusic" /> Fila
+                </button>
+                <SomenteAdmin>
+                    <a class="ss-btn ss-btn-fantasma ss-btn-sm" href="@Rotas.EditarMusica(Musica.Nome)" title="Editar faixa">
+                        <Icone Svg="@Icons.Material.Filled.Edit" /> Editar
+                    </a>
+                </SomenteAdmin>
+                @AcoesExtras
+            </div>
+            @if (Musica.Classificacao is > 0)
+            {
+                <Estrelas Valor="Musica.Classificacao.Value" />
+            }
+        </div>
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public MusicaResponse Musica { get; set; } = default!;
+    [Parameter] public IEnumerable<MusicaResponse>? Contexto { get; set; }
+    [Parameter] public RenderFragment? AcoesExtras { get; set; }
+
+    protected override void OnInitialized() => Player.OnMudanca += AoMudar;
+
+    private void AoMudar() => InvokeAsync(StateHasChanged);
+
+    private Task AdicionarAPlaylist() => DialogService.AdicionarAPlaylistAsync(Musica);
+
+    private void AdicionarNaFila()
+    {
+        if (Player.Atual is null)
+        {
+            _ = Player.TocarAsync(Musica);
+            return;
+        }
+
+        Player.AdicionarNaFila(Musica);
+        Snackbar.Add($"“{Musica.Nome}” adicionada à fila.", Severity.Normal);
+    }
+
+    public void Dispose() => Player.OnMudanca -= AoMudar;
+}

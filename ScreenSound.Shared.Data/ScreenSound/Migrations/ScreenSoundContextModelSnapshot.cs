@@ -17,10 +17,7 @@ namespace ScreenSound.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.4")
-                .HasAnnotation("Proxies:ChangeTracking", false)
-                .HasAnnotation("Proxies:CheckEquality", false)
-                .HasAnnotation("Proxies:LazyLoading", true)
+                .HasAnnotation("ProductVersion", "9.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -236,6 +233,9 @@ namespace ScreenSound.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("SpotifyUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AlbumId");
@@ -243,6 +243,60 @@ namespace ScreenSound.Migrations
                     b.HasIndex("ArtistaId");
 
                     b.ToTable("Musicas");
+                });
+
+            modelBuilder.Entity("ScreenSound.Modelos.Playlist", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CriadaEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Descricao")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("PessoaId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Publica")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PessoaId");
+
+                    b.ToTable("Playlists");
+                });
+
+            modelBuilder.Entity("ScreenSound.Modelos.PlaylistMusica", b =>
+                {
+                    b.Property<int>("PlaylistId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MusicaId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("AdicionadaEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("int");
+
+                    b.HasKey("PlaylistId", "MusicaId");
+
+                    b.HasIndex("MusicaId");
+
+                    b.ToTable("PlaylistMusicas", (string)null);
                 });
 
             modelBuilder.Entity("ScreenSound.Shared.Data.Modelos.PerfilDeAcesso", b =>
@@ -286,6 +340,10 @@ namespace ScreenSound.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("Bio")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
@@ -297,11 +355,19 @@ namespace ScreenSound.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<string>("FotoPerfil")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("NomeExibicao")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -343,7 +409,7 @@ namespace ScreenSound.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("ScreenSound.Shared.Modelos.Modelos.Avaliacao", b =>
+            modelBuilder.Entity("ScreenSound.Shared.Modelos.Avaliacao.Avaliacao", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -467,7 +533,35 @@ namespace ScreenSound.Migrations
                     b.Navigation("Artista");
                 });
 
-            modelBuilder.Entity("ScreenSound.Shared.Modelos.Modelos.Avaliacao", b =>
+            modelBuilder.Entity("ScreenSound.Modelos.Playlist", b =>
+                {
+                    b.HasOne("ScreenSound.Shared.Data.Modelos.PessoaComAcesso", null)
+                        .WithMany()
+                        .HasForeignKey("PessoaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ScreenSound.Modelos.PlaylistMusica", b =>
+                {
+                    b.HasOne("ScreenSound.Modelos.Musica", "Musica")
+                        .WithMany()
+                        .HasForeignKey("MusicaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ScreenSound.Modelos.Playlist", "Playlist")
+                        .WithMany("Itens")
+                        .HasForeignKey("PlaylistId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Musica");
+
+                    b.Navigation("Playlist");
+                });
+
+            modelBuilder.Entity("ScreenSound.Shared.Modelos.Avaliacao.Avaliacao", b =>
                 {
                     b.HasOne("ScreenSound.Modelos.Album", null)
                         .WithMany("Notas")
@@ -501,6 +595,11 @@ namespace ScreenSound.Migrations
             modelBuilder.Entity("ScreenSound.Modelos.Musica", b =>
                 {
                     b.Navigation("Notas");
+                });
+
+            modelBuilder.Entity("ScreenSound.Modelos.Playlist", b =>
+                {
+                    b.Navigation("Itens");
                 });
 #pragma warning restore 612, 618
         }

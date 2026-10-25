@@ -1,0 +1,224 @@
+@using ScreenSound.Shared.Modelos.Auxiliar
+@inject ArtistaAPI ArtistaAPI
+@inject GeneroAPI GeneroAPI
+@inject MusicaAPI MusicaAPI
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<div class="ss-cab-pagina">
+    <div>
+        <h1 class="ss-titulo-pagina">@(EhEdicao ? "Editar faixa" : "Enviar faixa")</h1>
+        <p class="ss-secao-sub">@(EhEdicao ? "Atualize as informações da faixa." : "Adicione uma nova faixa ao catálogo. Com um link do Spotify, ela já toca no player.")</p>
+    </div>
+</div>
+
+<div class="ss-form-card">
+    <div class="ss-form-previa">
+        <Capa SpotifyUrl="@(linkValido ? spotifyUrl : null)" Semente="@(string.IsNullOrWhiteSpace(nome) ? "nova faixa" : nome)" />
+        <p class="ss-form-previa-legenda">
+            @(linkValido && !string.IsNullOrWhiteSpace(spotifyUrl) ? "Capa obtida do Spotify" : "Prévia da capa — cole um link do Spotify para usar a capa oficial")
+        </p>
+    </div>
+
+    <MudForm @ref="form" @bind-IsValid="valido" Class="ss-form-campos">
+        <MudTextField T="string" Label="Título" @bind-Value="nome" Variant="Variant.Outlined"
+                      Required="true" RequiredError="Informe o título da faixa." Immediate="true" MaxLength="200" />
+
+        <MudSelect T="ArtistaResponse" Label="Artista" @bind-Value="artista" Variant="Variant.Outlined"
+                   Required="true" RequiredError="Selecione o artista." ToStringFunc="@(a => a?.Nome)"
+                   AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft">
+            @foreach (var item in artistas ?? new List<ArtistaResponse>())
+            {
+                <MudSelectItem Value="item">@item.Nome</MudSelectItem>
+            }
+        </MudSelect>
+        <p class="ss-dica">O artista não está na lista? <a class="ss-link-laranja" href="/CadastrarArtista">Cadastre um novo artista</a>.</p>
+
+        <MudNumericField T="int?" Label="Ano de lançamento" @bind-Value="ano" Variant="Variant.Outlined"
+                         Min="1900" Max="@(DateTime.Now.Year + 1)" HideSpinButtons="true"
+                         Required="true" RequiredError="Informe o ano de lançamento." />
+
+        <MudAutocomplete T="GeneroResponse" Label="Gêneros (selecione ou digite um novo)"
+                         Value="generoTemporario" ValueChanged="AdicionarGenero"
+                         SearchFunc="PesquisarGeneros" ToStringFunc="@(g => g?.Nome)"
+                         Variant="Variant.Outlined" CoerceText="true" CoerceValue="false" ResetValueOnEmptyText="true"
+                         AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft" />
+
+        @if (generosSelecionados.Count > 0)
+        {
+            <div class="ss-faixa-acoes" style="margin-top:10px">
+                @foreach (var genero in generosSelecionados)
+                {
+                    <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" OnClose="() => generosSelecionados.Remove(genero)">@genero.Nome</MudChip>
+                }
+            </div>
+        }
+
+        <MudTextField T="string" Label="Link do Spotify (opcional)" @bind-Value="spotifyUrl" Variant="Variant.Outlined"
+                      Placeholder="https://open.spotify.com/track/..." Immediate="true" DebounceInterval="400"
+                      Validation="@(new Func<string?, string?>(ValidarLink))" OnDebounceIntervalElapsed="AtualizarPrevia"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Link" />
+        <p class="ss-dica">No Spotify: ⋯ → Compartilhar → Copiar link da música.</p>
+
+        <div class="ss-form-acoes">
+            <div class="grupo">
+                @if (EhEdicao)
+                {
+                    <button type="button" class="ss-btn ss-btn-perigo" @onclick="Excluir" disabled="@salvando">
+                        <Icone Svg="@Icons.Material.Filled.DeleteOutline" /> Excluir faixa
+                    </button>
+                }
+            </div>
+            <div class="grupo">
+                <button type="button" class="ss-btn ss-btn-fantasma" @onclick="Voltar">Cancelar</button>
+                <button type="button" class="ss-btn ss-btn-primario" @onclick="Salvar" disabled="@salvando">
+                    @(salvando ? "Salvando..." : EhEdicao ? "Salvar alterações" : "Enviar faixa")
+                </button>
+            </div>
+        </div>
+    </MudForm>
+</div>
+
+@code {
+    /// <summary>Faixa em edição; nula no cadastro.</summary>
+    [Parameter] public MusicaResponse? Musica { get; set; }
+
+    private bool EhEdicao => Musica is not null;
+
+    private MudForm? form;
+    private bool valido;
+    private bool salvando;
+
+    private string? nome;
+    private int? ano;
+    private string? spotifyUrl;
+    private bool linkValido = true;
+    private ArtistaResponse? artista;
+    private GeneroResponse? generoTemporario;
+    private List<GeneroResponse> generosSelecionados = new();
+
+    private List<ArtistaResponse>? artistas;
+    private List<GeneroResponse>? generos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var tarefaGeneros = GeneroAPI.GetGenerosAsync();
+        artistas = (await ArtistaAPI.GetArtistasAsync())?.OrderBy(a => a.Nome).ToList() ?? new();
+
+        try
+        {
+            generos = await tarefaGeneros ?? new();
+        }
+        catch (HttpRequestException)
+        {
+            generos = new();
+        }
+
+        if (Musica is not null)
+        {
+            nome = Musica.Nome;
+            ano = Musica.AnoLancamento is > 0 ? Musica.AnoLancamento : null;
+            spotifyUrl = Musica.SpotifyUrl;
+            artista = artistas.FirstOrDefault(a => a.Id == Musica.ArtistaId);
+            generosSelecionados = Musica.Generos.ToList();
+        }
+    }
+
+    private string? ValidarLink(string? link)
+    {
+        linkValido = SpotifyLink.EhValido(link);
+        return linkValido ? null : "Use um link do Spotify, ex.: https://open.spotify.com/track/...";
+    }
+
+    private void AtualizarPrevia(string? link)
+    {
+        linkValido = SpotifyLink.EhValido(link);
+        StateHasChanged();
+    }
+
+    private Task<IEnumerable<GeneroResponse>> PesquisarGeneros(string? valor, CancellationToken token)
+    {
+        IEnumerable<GeneroResponse> resultado = generos ?? new();
+
+        if (!string.IsNullOrWhiteSpace(valor))
+        {
+            var filtrados = resultado.Where(g => Visual.Contem(g.Nome, valor)).ToList();
+            if (!filtrados.Any(g => g.Nome.Equals(valor.Trim(), StringComparison.OrdinalIgnoreCase)))
+            {
+                filtrados.Add(new GeneroResponse(valor.Trim(), null));
+            }
+            resultado = filtrados;
+        }
+
+        return Task.FromResult(resultado);
+    }
+
+    private void AdicionarGenero(GeneroResponse? genero)
+    {
+        if (genero is not null && !generosSelecionados.Any(g => g.Nome.Equals(genero.Nome, StringComparison.OrdinalIgnoreCase)))
+        {
+            generosSelecionados.Add(genero);
+        }
+        generoTemporario = null;
+    }
+
+    private async Task Salvar()
+    {
+        if (form is not null)
+        {
+            await form.Validate();
+            if (!form.IsValid) return;
+        }
+
+        salvando = true;
+        try
+        {
+            var generosRequest = generosSelecionados.Select(g => new GeneroRequest(g.Nome, g.DescricaoGenero)).ToList();
+            var link = string.IsNullOrWhiteSpace(spotifyUrl) ? null : spotifyUrl.Trim();
+            var titulo = nome!.Trim();
+
+            if (Musica is null)
+            {
+                await MusicaAPI.AddMusicaAsync(new MusicaRequest(titulo, artista!.Id, ano ?? 0, generosRequest, link));
+                Snackbar.Add("Faixa enviada com sucesso!", Severity.Success);
+            }
+            else
+            {
+                // A API mantém o link anterior quando recebe null; string vazia remove o link
+                await MusicaAPI.UpdateMusicaAsync(new MusicaRequestEdit(titulo, artista!.Id, ano ?? 0, generosRequest, Musica.Id, link ?? string.Empty));
+                Snackbar.Add("Faixa atualizada!", Severity.Success);
+            }
+
+            Navigation.NavigateTo(Rotas.Musica(titulo));
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+
+    private async Task Excluir()
+    {
+        if (Musica is null) return;
+        if (!await DialogService.ConfirmarAsync("Excluir faixa", $"Tem certeza que deseja excluir “{Musica.Nome}”? Ela também sairá de todas as playlists."))
+            return;
+
+        try
+        {
+            await MusicaAPI.DeleteMusicaAsync(Musica.Id);
+            Snackbar.Add("Faixa excluída.", Severity.Success);
+            Navigation.NavigateTo("/Musicas");
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private void Voltar() => Navigation.NavigateTo(Musica is null ? "/Musicas" : Rotas.Musica(Musica.Nome));
+}
