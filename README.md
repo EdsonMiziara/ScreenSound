@@ -13,11 +13,14 @@ Explore artistas e faixas, ouça direto no navegador com um player integrado ao 
 ![Blazor](https://img.shields.io/badge/Blazor-WebAssembly-6D28D9?logo=blazor&logoColor=white)
 ![EF Core](https://img.shields.io/badge/EF%20Core-9-3B82F6)
 ![Azure](https://img.shields.io/badge/Azure-App%20Service%20%2B%20SQL-0078D4?logo=microsoftazure&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-Front--end-000000?logo=vercel&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 
-### [▶ Acessar a demonstração](https://screensound-web-edson-fwcma8bdb4a8h0c7.brazilsouth-01.azurewebsites.net)
+### [▶ Acessar a demonstração](https://screensound.edsonmiziara.com)
 
 Entre com um clique em **Demo ouvinte** ou **Demo admin** na tela de login, sem precisar se cadastrar.
+
+Também disponível no Azure: [versão hospedada no App Service](https://screensound-web-edson-fwcma8bdb4a8h0c7.brazilsouth-01.azurewebsites.net)
 
 <img src="docs/imagens/faixas-player.png" alt="Lista de faixas com waveform e player tocando" width="900" />
 
@@ -44,7 +47,7 @@ Entre com um clique em **Demo ouvinte** ou **Demo admin** na tela de login, sem 
 
 ## Sobre o projeto
 
-O ScreenSound começou como um app de console para estudar C# e evoluiu para uma aplicação web completa, publicada no Azure. Hoje ele reúne, em um único repositório, as peças de um produto real:
+O ScreenSound começou como um app de console para estudar C# e evoluiu para uma aplicação web completa, publicada na nuvem (API e banco no Azure, front-end no Azure e na Vercel). Hoje ele reúne, em um único repositório, as peças de um produto real:
 
 - uma **API REST** em ASP.NET Core com autenticação, perfis de acesso e regras de negócio;
 - um **front-end SPA** em Blazor WebAssembly, com interface inspirada no SoundCloud;
@@ -105,12 +108,18 @@ As permissões são verificadas **na API** (políticas de autorização), e a in
 **Qualidade e DevOps**
 - Testes unitários com **xUnit** e testes de integração com **Testcontainers** (SQL Server real em Docker).
 - **CI no GitHub Actions** (testes unitários e de integração, build com o SDK 9 e build das imagens Docker) e **deploy contínuo** da API e do front no **Azure App Service**, que só acontece se os testes passarem.
+- O front-end também é publicado na **Vercel**, que serve o domínio [screensound.edsonmiziara.com](https://screensound.edsonmiziara.com).
 - **Docker Compose** sobe banco, API e front com um comando; o nginx serve o Blazor e faz proxy da API na mesma origem.
 
 ## Arquitetura
 
 ```mermaid
 flowchart LR
+    subgraph Hospedagem["Hospedagem do front-end"]
+        VERCEL["Vercel<br/>(domínio próprio)"]
+        AZWEB["Azure App Service"]
+    end
+
     subgraph Navegador
         WEB["Blazor WebAssembly<br/>(ScreenSound.Web)"]
     end
@@ -122,6 +131,8 @@ flowchart LR
 
     SPOTIFY["Spotify<br/>oEmbed · iFrame API · Web Playback SDK"]
 
+    VERCEL --> WEB
+    AZWEB --> WEB
     WEB -- "HTTPS + cookie de autenticação" --> API
     API -- "EF Core" --> DB
     WEB -- "capas e player" --> SPOTIFY
@@ -149,7 +160,7 @@ ScreenSound/
 | Front-end | Blazor WebAssembly, MudBlazor, CSS próprio, JavaScript (interop) |
 | Integrações | Spotify oEmbed, Spotify iFrame API, Spotify Web Playback SDK, OAuth 2.0 PKCE |
 | Testes | xUnit, Testcontainers, WebApplicationFactory |
-| DevOps | Docker, Docker Compose, nginx, GitHub Actions, Azure App Service |
+| DevOps e nuvem | Docker, Docker Compose, nginx, GitHub Actions, Azure App Service, Azure SQL, Vercel |
 
 ## Como rodar
 
@@ -202,7 +213,7 @@ As contas demo são criadas automaticamente quando a API sobe. Para ter também 
 | Chave | Projeto | Descrição |
 | --- | --- | --- |
 | `ConnectionStrings:ScreenSoundDB` | API | Connection string do SQL Server |
-| `Cors:AllowedOrigins` | API | Origens do front permitidas, separadas por vírgula |
+| `Cors:AllowedOrigins` | API | Origens do front permitidas, separadas por vírgula (inclua o domínio da Vercel e o do Azure) |
 | `Cookies:EntreDominios` | API | `true` (padrão) quando front e API estão em domínios diferentes; `false` quando ficam na mesma origem (Docker) |
 | `Banco:AplicarMigracoesAoIniciar` | API | Aplica as migrations pendentes ao iniciar |
 | `Banco:PopularCatalogoDemo` | API | Popula o catálogo de exemplo se o banco estiver vazio |
@@ -240,11 +251,12 @@ dotnet test ScreenSound.Teste
 dotnet test ScreenSound.Teste.Integracao
 ```
 
-| Workflow | Quando roda | O que faz |
+| Workflow / integração | Quando roda | O que faz |
 | --- | --- | --- |
 | `ci.yml` | Push e pull request na `master` | Testes unitários e de integração, build da API e do front com o SDK 9, build das imagens Docker |
 | `deploy-api.yml` | Push com mudanças na API, dados ou domínio | Testes → publish → Azure App Service |
 | `deploy-web.yml` | Push com mudanças no front ou no domínio | Testes → publish → Azure App Service |
+| Vercel (integração com o GitHub) | Push na branch configurada na Vercel | Build e publicação do front-end, que serve o domínio screensound.edsonmiziara.com |
 
 ## Próximos passos
 
@@ -255,8 +267,9 @@ dotnet test ScreenSound.Teste.Integracao
 
 ## Autor
 
-Desenvolvido por **[EdsonMiziara](https://github.com/EdsonMiziara)**.
-<!-- Adicione aqui o link do seu LinkedIn, por exemplo: [LinkedIn](https://www.linkedin.com/in/seu-perfil) -->
+Desenvolvido por **[Edson Miziara](https://github.com/EdsonMiziara)**.
+
+[LinkedIn](https://www.linkedin.com/in/edson-miziara) · [Portfólio](https://www.edsonmiziara.com) · [GitHub](https://github.com/EdsonMiziara)
 
 Sugestões e feedback são bem-vindos: abra uma [issue](https://github.com/EdsonMiziara/ScreenSound/issues).
 
@@ -264,6 +277,6 @@ Sugestões e feedback são bem-vindos: abra uma [issue](https://github.com/Edson
 
 ## English summary
 
-**ScreenSound** is a SoundCloud-inspired music discovery platform built end to end with **.NET 9**: an ASP.NET Core Minimal API with ASP.NET Identity (role-based authorization for listeners and admins), Entity Framework Core on Azure SQL, and a Blazor WebAssembly front end with a custom design system. It integrates with Spotify (oEmbed for artwork, the iFrame API for the public player and the Web Playback SDK with OAuth 2.0 PKCE for Premium users), has unit and integration tests (xUnit, Testcontainers), runs with a single `docker compose up --build`, and is continuously deployed to Azure App Service through GitHub Actions.
+**ScreenSound** is a SoundCloud-inspired music discovery platform built end to end with **.NET 9**: an ASP.NET Core Minimal API with ASP.NET Identity (role-based authorization for listeners and admins), Entity Framework Core on Azure SQL, and a Blazor WebAssembly front end with a custom design system. It integrates with Spotify (oEmbed for artwork, the iFrame API for the public player and the Web Playback SDK with OAuth 2.0 PKCE for Premium users), has unit and integration tests (xUnit, Testcontainers), runs with a single `docker compose up --build`, and is continuously deployed through GitHub Actions to Azure App Service, with the front end also served from Vercel.
 
-**[Live demo](https://screensound-web-edson-fwcma8bdb4a8h0c7.brazilsouth-01.azurewebsites.net)**: use the *Demo ouvinte* (listener) or *Demo admin* buttons on the login page.
+**[Live demo](https://screensound.edsonmiziara.com)**: use the *Demo ouvinte* (listener) or *Demo admin* buttons on the login page.
